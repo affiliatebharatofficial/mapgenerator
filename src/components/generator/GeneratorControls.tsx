@@ -69,25 +69,40 @@ export const GeneratorControls: React.FC<GeneratorControlsProps> = ({
       else if (text.includes('archipelago')) type = 'archipelago';
       else if (text.includes('kingdom')) type = 'kingdom';
       else if (text.includes('region')) type = 'region';
+      else if (text.includes('continent')) type = 'continent';
 
-      if (text.includes('dark') || text.includes('shadow')) style = 'dark-fantasy';
-      else if (text.includes('sketch') || text.includes('hand')) style = 'hand-drawn';
-      else if (text.includes('clean')) style = 'clean';
-      else if (text.includes('rpg') || text.includes('hex')) style = 'rpg';
+      if (text.includes('dark') || text.includes('shadow') || text.includes('gothic') || text.includes('evil')) style = 'dark-fantasy';
+      else if (text.includes('sketch') || text.includes('hand') || text.includes('ink')) style = 'hand-drawn';
+      else if (text.includes('clean') || text.includes('modern') || text.includes('pastel')) style = 'clean';
+      else if (text.includes('rpg') || text.includes('hex') || text.includes('campaign')) style = 'rpg';
+      else if (text.includes('parchment') || text.includes('ancient') || text.includes('vintage')) style = 'parchment';
+
+      const hasDeserts = text.includes('desert') || text.includes('dune') || text.includes('sand') || text.includes('wasteland');
+      const hasSwamps = text.includes('swamp') || text.includes('marsh') || text.includes('bog') || text.includes('mire');
+      const hasSnow = text.includes('snow') || text.includes('ice') || text.includes('frost') || text.includes('tundra');
+
+      const mountainVal = text.includes('mountain') || text.includes('peak') || text.includes('ridge') ? 8 : text.includes('flat') ? 3 : 6;
+      const forestVal = text.includes('wood') || text.includes('forest') || text.includes('jungle') ? 8 : text.includes('barren') ? 2 : 5;
+      const riverVal = text.includes('river') || text.includes('stream') || text.includes('delta') ? 8 : 5;
+      const settlementVal = text.includes('city') || text.includes('town') || text.includes('capital') || text.includes('empire') ? 14 : 8;
 
       onChangeConfig({
         ...config,
         seed: Math.floor(Math.random() * 899999) + 100000,
         type,
         style,
-        mountainDensity: text.includes('mountain') || text.includes('peak') ? 9 : 6,
-        forestDensity: text.includes('wood') || text.includes('forest') ? 9 : 5,
-        settlementCount: text.includes('city') || text.includes('kingdom') ? 12 : 6
+        mountainDensity: mountainVal,
+        forestDensity: forestVal,
+        riverDensity: riverVal,
+        settlementCount: settlementVal,
+        showDeserts: hasDeserts || config.showDeserts,
+        showSwamps: hasSwamps || config.showSwamps,
+        showSnow: hasSnow || config.showSnow
       });
 
       setIsParsing(false);
       onGenerate();
-    }, 600);
+    }, 500);
   };
 
   return (
