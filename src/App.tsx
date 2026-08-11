@@ -595,6 +595,11 @@ function AppRouter() {
       }
       return (
         <SeoAdminPage
+          onNavigateCreate={() => {
+            setEditingMapId(null);
+            setPresetConfig(null);
+            navigate('/create');
+          }}
           onNavigateHome={() => navigate('/')}
         />
       );
