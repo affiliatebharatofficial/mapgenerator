@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Compass, Sparkles, Menu, X, User, Settings, LogOut, LayoutDashboard, CreditCard, Globe, Shield, BookOpen } from 'lucide-react';
+import { Compass, Sparkles, Menu, X, User, Settings, LogOut, LayoutDashboard, CreditCard, Globe, Shield, BookOpen, Image as ImageIcon } from 'lucide-react';
 import { useAuth } from '../../lib/supabase/authStore';
 import { useSubscription } from '../../lib/supabase/subscriptionStore';
 
@@ -120,6 +120,16 @@ export const Header: React.FC<HeaderProps> = ({
 
           {isAuthenticated && (
             <button
+              onClick={() => (window.location.pathname = '/image-studio')}
+              className="hover:text-amber-400 transition-colors flex items-center gap-1.5 text-amber-300 font-semibold"
+            >
+              <ImageIcon className="w-4 h-4 text-amber-400" />
+              <span>Image Studio</span>
+            </button>
+          )}
+
+          {isAuthenticated && (
+            <button
               onClick={() => (window.location.pathname = '/export')}
               className="hover:text-amber-400 transition-colors flex items-center gap-1.5 text-amber-300 font-semibold"
             >
@@ -195,6 +205,16 @@ export const Header: React.FC<HeaderProps> = ({
                     className="w-full text-left px-3 py-2 text-xs text-slate-300 hover:text-amber-300 hover:bg-slate-800 rounded-lg flex items-center gap-2"
                   >
                     <Globe className="w-4 h-4 text-amber-400" /> My Worlds
+                  </button>
+
+                  <button
+                    onClick={() => {
+                      setUserDropdownOpen(false);
+                      window.location.pathname = '/image-studio';
+                    }}
+                    className="w-full text-left px-3 py-2 text-xs text-slate-300 hover:text-amber-300 hover:bg-slate-800 rounded-lg flex items-center gap-2"
+                  >
+                    <ImageIcon className="w-4 h-4 text-amber-400" /> Image Studio
                   </button>
 
                   <button

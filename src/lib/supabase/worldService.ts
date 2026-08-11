@@ -254,6 +254,22 @@ export const WorldService = {
     return newWorld;
   },
 
+  async updateWorld(world: World): Promise<World> {
+    const worlds = getStoredArray<World>(WORLDS_KEY, [INITIAL_SHOWCASE_WORLD]);
+    const idx = worlds.findIndex((w) => w.id === world.id);
+    if (idx >= 0) {
+      worlds[idx] = { ...world, updatedAt: new Date().toISOString() };
+    } else {
+      worlds.unshift(world);
+    }
+    saveStoredArray(WORLDS_KEY, worlds);
+    return world;
+  },
+
+  async saveWorld(world: World): Promise<World> {
+    return this.updateWorld(world);
+  },
+
   async deleteWorld(worldId: string): Promise<boolean> {
     let worlds = getStoredArray<World>(WORLDS_KEY, [INITIAL_SHOWCASE_WORLD]);
     worlds = worlds.filter((w) => w.id !== worldId);

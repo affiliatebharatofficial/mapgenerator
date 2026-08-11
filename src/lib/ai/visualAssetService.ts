@@ -1,4 +1,5 @@
 import { ImageProviderRouter } from './imageProviderRouter';
+import { ImageStudioService } from './imageStudioService';
 import type {
   VisualEntityType,
   VisualStyle,
@@ -138,18 +139,25 @@ export const VisualAssetService = {
     const newImage: GeneratedImage = {
       id: `img_${Date.now()}_${Math.random().toString(36).substring(2, 6)}`,
       userId,
+      name: ImageStudioService.generateDefaultTitle(request.prompt),
+      source: 'generated',
       worldId: request.worldId,
       entityType: request.entityType,
       entityId: request.entityId,
       provider: res.provider,
       model: res.model,
       prompt: request.prompt,
+      style: request.style,
       storagePath: `generated-images/user/${userId}/${request.worldId || 'general'}/${Date.now()}.webp`,
       url: res.imageUrl,
       thumbnailUrl: res.imageUrl,
       width: res.width,
       height: res.height,
       isPrimary: isFirst,
+      isFavorite: false,
+      isArchived: false,
+      creditsCharged: request.creditCost || 5,
+      providerCost: res.providerCost || 0.0015,
       status: 'completed',
       createdAt: new Date().toISOString()
     };
@@ -158,6 +166,9 @@ export const VisualAssetService = {
     if (isFirst) newImage.isPrimary = true;
     images.unshift(newImage);
     this.saveStoredImages(images);
+
+    // Sync with central Image Studio Library
+    await ImageStudioService.saveAsset(newImage);
 
     return newImage;
   },

@@ -1,8 +1,10 @@
 import React, { useState, useEffect } from 'react';
-import { Image, Sparkles, Check, Trash2, Plus } from 'lucide-react';
+import { Image, Sparkles, Check, Trash2, Plus, FolderOpen } from 'lucide-react';
 import type { GeneratedImage, VisualEntityType } from '../../types/visualAssets';
 import { VisualAssetService } from '../../lib/ai/visualAssetService';
 import { GenerateVisualAssetModal } from './GenerateVisualAssetModal';
+import { ImageAssetPicker } from './ImageAssetPicker';
+import { ImageStudioService } from '../../lib/ai/imageStudioService';
 
 interface EntityVisualGalleryProps {
   entityId: string;
@@ -19,6 +21,7 @@ export const EntityVisualGallery: React.FC<EntityVisualGalleryProps> = ({
 }) => {
   const [images, setImages] = useState<GeneratedImage[]>([]);
   const [showGenModal, setShowGenModal] = useState(false);
+  const [showPickerModal, setShowPickerModal] = useState(false);
 
   const loadGallery = () => {
     const list = VisualAssetService.getImagesForEntity(entityId);
@@ -39,18 +42,38 @@ export const EntityVisualGallery: React.FC<EntityVisualGalleryProps> = ({
     loadGallery();
   };
 
+  const handlePickAsset = async (asset: GeneratedImage) => {
+    await ImageStudioService.attachAssetToEntity(
+      asset.id,
+      asset.userId || 'user_current',
+      entityType === 'character' ? 'npc' : 'world',
+      entityId,
+      entityData.name || 'Entity',
+      'artwork'
+    );
+    loadGallery();
+  };
+
   return (
     <div className="space-y-4 font-sans select-none">
       <div className="flex items-center justify-between">
         <h4 className="font-cinzel font-bold text-sm text-slate-100 flex items-center gap-2">
           <Image className="w-4 h-4 text-amber-400" /> Visual Gallery ({images.length})
         </h4>
-        <button
-          onClick={() => setShowGenModal(true)}
-          className="px-3 py-1.5 bg-amber-500 hover:bg-amber-400 text-slate-950 font-bold text-xs rounded-xl flex items-center gap-1.5 shadow-md"
-        >
-          <Sparkles className="w-3.5 h-3.5" /> + Generate Visual
-        </button>
+        <div className="flex gap-2">
+          <button
+            onClick={() => setShowPickerModal(true)}
+            className="px-3 py-1.5 bg-slate-800 hover:bg-slate-700 text-amber-300 font-bold text-xs rounded-xl flex items-center gap-1.5 border border-slate-700"
+          >
+            <FolderOpen className="w-3.5 h-3.5" /> Library
+          </button>
+          <button
+            onClick={() => setShowGenModal(true)}
+            className="px-3 py-1.5 bg-amber-500 hover:bg-amber-400 text-slate-950 font-bold text-xs rounded-xl flex items-center gap-1.5 shadow-md"
+          >
+            <Sparkles className="w-3.5 h-3.5" /> + Generate Visual
+          </button>
+        </div>
       </div>
 
       {images.length === 0 ? (
@@ -114,6 +137,16 @@ export const EntityVisualGallery: React.FC<EntityVisualGalleryProps> = ({
           worldId={worldId}
           onClose={() => setShowGenModal(false)}
           onGenerated={() => loadGallery()}
+        />
+      )}
+
+      {/* Asset Picker Modal */}
+      {showPickerModal && (
+        <ImageAssetPicker
+          isOpen={showPickerModal}
+          onClose={() => setShowPickerModal(false)}
+          onSelectAsset={handlePickAsset}
+          title={`Select Artwork for ${entityData.name || 'Entity'}`}
         />
       )}
     </div>

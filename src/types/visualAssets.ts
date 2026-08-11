@@ -28,14 +28,14 @@ export type VisualFraming =
   | 'wide-landscape'
   | 'emblem-close-up';
 
-export type VisualAspectRatio = '1:1' | '3:4' | '16:9' | '4:3';
+export type VisualAspectRatio = '1:1' | '16:9' | '4:3' | '3:2' | '9:16' | '3:4';
 
 export interface ImageGenerationRequest {
   entityType: VisualEntityType;
   entityId?: string;
   worldId?: string;
   prompt: string;
-  style: VisualStyle;
+  style: VisualStyle | string;
   framing?: VisualFraming;
   aspectRatio: VisualAspectRatio;
   quality?: 'standard' | 'hd';
@@ -44,23 +44,44 @@ export interface ImageGenerationRequest {
   creditCost: number;
 }
 
+export interface AssetUsageRecord {
+  id: string;
+  assetId: string;
+  userId: string;
+  entityType: 'world' | 'map' | 'npc' | 'location' | 'adventure' | 'campaign';
+  entityId: string;
+  entityName?: string;
+  usageType: 'cover' | 'portrait' | 'artwork' | 'lore' | 'map_banner';
+  createdAt: string;
+}
+
 export interface GeneratedImage {
   id: string;
   userId: string;
+  name: string;
+  source: 'generated' | 'uploaded';
   worldId?: string;
   entityType: VisualEntityType;
   entityId?: string;
   provider: string;
   model: string;
   prompt: string;
+  style?: string;
   storagePath: string;
   url: string;
   thumbnailUrl?: string;
   width: number;
   height: number;
   isPrimary: boolean;
+  isFavorite?: boolean;
+  isArchived?: boolean;
+  creditsCharged?: number;
+  providerCost?: number;
+  tags?: string[];
   status: 'queued' | 'generating' | 'completed' | 'failed';
   createdAt: string;
+  updatedAt?: string;
+  usages?: AssetUsageRecord[];
 }
 
 export interface WorldArtDirection {
@@ -85,3 +106,19 @@ export interface WorldCreature {
   imageUrl?: string;
   createdAt: string;
 }
+
+export type ImageStudioTab = 'generate' | 'library' | 'favorites' | 'styles' | 'recent';
+
+export type ImageStudioFilter =
+  | 'all'
+  | 'generated'
+  | 'uploaded'
+  | 'world_artwork'
+  | 'map_artwork'
+  | 'npc_portrait'
+  | 'location_artwork'
+  | 'adventure_artwork'
+  | 'campaign_artwork';
+
+export type ImageStudioSort = 'newest' | 'oldest' | 'recently_used' | 'favorites';
+

@@ -36,6 +36,7 @@ import { ExportHistoryPage } from './pages/export/ExportHistoryPage';
 import { WorldBiblePage } from './pages/world/WorldBiblePage';
 import { AdventureBuilderPage } from './pages/campaigns/AdventureBuilderPage';
 import { CampaignWorkspacePage } from './pages/campaigns/CampaignWorkspacePage';
+import { ImageStudioPage } from './pages/image-studio/ImageStudioPage';
 import { SeoService } from './lib/seo/seoService';
 import type { MapStyle, MapType } from './types/map';
 
@@ -79,6 +80,27 @@ function AppRouter() {
   const handleNavigateProfile = (username: string) => {
     navigate(`/profile/${username}`);
   };
+
+  // Phase 21 AI Image Studio Routes
+  if (path.startsWith('/image-studio')) {
+    let tab: 'generate' | 'library' | 'favorites' | 'styles' | 'recent' = 'generate';
+    if (path === '/image-studio/library') tab = 'library';
+    else if (path === '/image-studio/favorites') tab = 'favorites';
+    else if (path === '/image-studio/styles') tab = 'styles';
+    else if (path === '/image-studio/recent') tab = 'recent';
+
+    return (
+      <ImageStudioPage
+        initialTab={tab}
+        onNavigateCreate={() => {
+          setEditingMapId(null);
+          setPresetConfig(null);
+          navigate('/create');
+        }}
+        onNavigateHome={() => navigate('/')}
+      />
+    );
+  }
 
   // Phase 8 Community & Discovery Routes
   if (path === '/explore') {
