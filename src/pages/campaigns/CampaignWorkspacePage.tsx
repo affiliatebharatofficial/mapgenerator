@@ -27,7 +27,7 @@ export const CampaignWorkspacePage: React.FC<CampaignWorkspacePageProps> = ({
   useEffect(() => {
     async function load() {
       const res = await CampaignService.getCampaignById(campaignId);
-      setCampaign(res);
+      setCampaign(res || null);
     }
     load();
   }, [campaignId]);

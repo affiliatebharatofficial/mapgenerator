@@ -390,7 +390,7 @@ export const CommunityService = {
 
   async globalSearch(query: string): Promise<SearchResult> {
     const q = query.toLowerCase().trim();
-    if (!q) return { maps: [], worlds: [], creators: [] };
+    if (!q) return { maps: [], worlds: [], creators: [], items: [] };
 
     const publicMaps = await MapService.getPublicMaps();
     const filteredMaps = publicMaps.filter(
@@ -402,7 +402,36 @@ export const CommunityService = {
       await this.getCreatorProfile('lyra_maps')
     ].filter((c) => c.username.toLowerCase().includes(q) || c.display_name.toLowerCase().includes(q));
 
-    return { maps: filteredMaps, worlds: [], creators };
+    const items = filteredMaps.map((m) => ({
+      id: m.id,
+      type: 'Map',
+      title: m.title,
+      description: `${m.map_type} map generated in ${m.map_style} style`,
+      url: `/map/${m.slug}`
+    }));
+
+    return { maps: filteredMaps, worlds: [], creators, items };
+  },
+
+  searchPublicContent(query: string): any[] {
+    const q = query.toLowerCase().trim();
+    if (!q) return [];
+    return [
+      {
+        id: 'res_1',
+        type: 'Map',
+        title: 'The Realm of Eldoria',
+        description: 'Continent fantasy map with high mountain passes, winding rivers, and coastal kingdoms.',
+        url: '/create'
+      },
+      {
+        id: 'res_2',
+        type: 'World',
+        title: 'Archipelago of Eldoria',
+        description: 'Island sea realm featuring 12 pirate ports, elven forests, and volcanic islands.',
+        url: '/worlds'
+      }
+    ].filter((item) => item.title.toLowerCase().includes(q) || item.description.toLowerCase().includes(q));
   },
 
   // ----------------------------------------------------

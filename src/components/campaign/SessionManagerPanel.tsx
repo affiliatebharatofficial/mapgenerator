@@ -149,7 +149,7 @@ export const SessionManagerPanel: React.FC<SessionManagerPanelProps> = ({ campai
                   </div>
                   <p className="text-slate-200">{e.description}</p>
                 </div>
-                {e.isGmSecret && <Lock className="w-3.5 h-3.5 text-rose-400 shrink-0" title="GM Secret" />}
+                {e.isGmSecret && <Lock className="w-3.5 h-3.5 text-rose-400 shrink-0" />}
               </div>
             ))}
           </div>

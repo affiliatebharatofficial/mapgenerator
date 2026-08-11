@@ -99,10 +99,19 @@ export interface ExploreFilters {
   searchQuery?: string;
 }
 
+export interface SearchResultItem {
+  id: string;
+  type: string;
+  title: string;
+  description: string;
+  url: string;
+}
+
 export interface SearchResult {
   maps: CloudMapRecord[];
   worlds: World[];
   creators: CreatorProfileInfo[];
+  items: SearchResultItem[];
 }
 
 export interface ContentReport {

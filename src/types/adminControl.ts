@@ -15,9 +15,9 @@ export interface AdminSystemMetrics {
 export interface SystemHealthStatus {
   dbStatus: 'Operational' | 'Degraded' | 'Unavailable' | 'Not Configured';
   vercelStatus: 'Operational' | 'Degraded' | 'Unavailable';
-  storageStatus: 'Operational' | 'Degraded' | 'Unavailable';
-  aiStatus: 'Operational' | 'Degraded' | 'Unavailable';
-  paymentsStatus: 'Operational' | 'Not Configured';
+  storageStatus: 'Operational' | 'Degraded' | 'Unavailable' | 'Not Configured';
+  aiStatus: 'Operational' | 'Degraded' | 'Unavailable' | 'Not Configured';
+  paymentsStatus: 'Operational' | 'Degraded' | 'Unavailable' | 'Not Configured';
   lastChecked: string;
 }
 

@@ -86,6 +86,7 @@ type AdminTab =
   | 'features'
   | 'settings'
   | 'storage'
+  | 'health'
   | 'audit'
   | 'emergency'
   | 'backup'
@@ -533,7 +534,7 @@ export const AdminDashboardPage: React.FC<AdminDashboardPageProps> = ({ onNaviga
               </div>
               <div className="glass-panel p-5 rounded-2xl border border-slate-800 space-y-1">
                 <span className="font-mono text-2xl font-bold text-emerald-400">
-                  {loadingMetrics ? '...' : metrics?.estimatedCostUsd === null ? 'Not tracked' : `$${metrics.estimatedCostUsd}`}
+                  {loadingMetrics ? '...' : !metrics || metrics.estimatedCostUsd === null ? 'Not tracked' : `$${metrics.estimatedCostUsd}`}
                 </span>
                 <span className="text-xs text-slate-400 block font-cinzel font-bold">Tracked AI Cost</span>
               </div>

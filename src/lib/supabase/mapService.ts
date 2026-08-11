@@ -279,6 +279,11 @@ export const MapService = {
     return record;
   },
 
+  // Fetch all public maps
+  async getPublicMaps(): Promise<CloudMapRecord[]> {
+    return getStoredCloudMaps().filter((m) => m.is_public);
+  },
+
   // Fetch Public Gallery maps with search, filter, and sorting
   async getPublicGallery(filters?: {
     search?: string;

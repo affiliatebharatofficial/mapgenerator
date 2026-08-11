@@ -59,7 +59,7 @@ export function generateFantasyMap(config: GeneratorConfig): FantasyMap {
   coastline += ' Z';
 
   // Mountains list
-  const mountains = [];
+  const mountains: any[] = [];
   mtnRanges.forEach((range) => {
     range.ridgePoints.forEach((pt) => {
       mountains.push({

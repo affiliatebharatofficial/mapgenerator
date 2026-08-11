@@ -3,7 +3,7 @@ import { Header } from '../../components/layout/Header';
 import { SeoFooter } from '../../components/seo/SeoFooter';
 import { Search, Compass, Globe, Users, Wand2, ArrowRight } from 'lucide-react';
 import { CommunityService } from '../../lib/supabase/communityService';
-import type { SearchResult } from '../../types/community';
+import type { SearchResultItem } from '../../types/community';
 
 interface SearchPageProps {
   onNavigateCreate: () => void;
@@ -20,7 +20,7 @@ export const SearchPage: React.FC<SearchPageProps> = ({
   const initialQuery = urlParams.get('q') || '';
 
   const [query, setQuery] = useState(initialQuery);
-  const [results, setResults] = useState<SearchResult[]>([]);
+  const [results, setResults] = useState<SearchResultItem[]>([]);
   const [loading, setLoading] = useState(false);
 
   useEffect(() => {
