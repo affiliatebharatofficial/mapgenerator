@@ -424,6 +424,17 @@ export const CreatePage: React.FC<CreatePageProps> = ({
     return true;
   };
 
+  // Change Config & Regenerate Map Action
+  const handleChangeConfig = useCallback(
+    (newConfig: GeneratorConfig) => {
+      setConfig(newConfig);
+      const newMap = generateFantasyMap(newConfig);
+      pushState(newMap);
+      setSelectedObject(null);
+    },
+    [pushState]
+  );
+
   // Generate Map Action
   const handleGenerate = useCallback(() => {
     const newMap = generateFantasyMap(config);
@@ -744,7 +755,7 @@ export const CreatePage: React.FC<CreatePageProps> = ({
           <div className="hidden lg:block h-full z-20">
             <GeneratorControls
               config={config}
-              onChangeConfig={setConfig}
+              onChangeConfig={handleChangeConfig}
               onGenerate={handleGenerate}
               onSelectLockedStyle={(styleId) => setShowUpgradeModal(`Theme Style: ${styleId}`)}
               onRequireAICredits={handleRequireAICredits}
