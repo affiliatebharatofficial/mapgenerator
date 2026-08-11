@@ -7,6 +7,7 @@ import {
   Shield,
   Cpu,
   Coins,
+  Image,
   CreditCard,
   Flag,
   Activity,
@@ -346,7 +347,8 @@ export const AdminDashboardPage: React.FC<AdminDashboardPageProps> = ({ onNaviga
               {[
                 { id: 'users', label: 'Users', icon: Users },
                 { id: 'worlds', label: 'Worlds', icon: Globe },
-                { id: 'maps', label: 'Maps', icon: MapIcon },
+                { id: 'maps', label: 'Maps Catalog', icon: MapIcon },
+                { id: 'map_generator', label: 'Map Generator Parameters', icon: Sliders },
                 { id: 'campaigns', label: 'Campaigns', icon: Shield }
               ].map((item) => (
                 <button
@@ -367,8 +369,11 @@ export const AdminDashboardPage: React.FC<AdminDashboardPageProps> = ({ onNaviga
               <span className="text-[10px] font-mono text-slate-400 uppercase tracking-wider px-2 block mb-1">AI CONTROL</span>
               {[
                 { id: 'ai', label: 'AI Overview', icon: Cpu },
-                { id: 'ai_routing', label: 'Feature Routing', icon: Sliders },
-                { id: 'ai_logs', label: 'AI Logs', icon: Terminal },
+                { id: 'ai_image_providers', label: 'Image Providers (Runware)', icon: Image },
+                { id: 'ai_image_models', label: 'Image Models (FLUX.1)', icon: Layers },
+                { id: 'ai_image_logs', label: 'Image Logs', icon: Terminal },
+                { id: 'ai_routing', label: 'Feature Model Routing', icon: Sliders },
+                { id: 'ai_prompts', label: 'Versioned Prompts', icon: FileText },
                 { id: 'ai_test', label: 'AI Test Console', icon: Sparkles }
               ].map((item) => (
                 <button
