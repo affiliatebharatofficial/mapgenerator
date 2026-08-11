@@ -14,10 +14,14 @@ import {
   EyeOff,
   CheckCircle,
   Clock,
-  Sparkles
+  Sparkles,
+  Image as ImageIcon
 } from 'lucide-react';
 import { CampaignService } from '../../lib/supabase/campaignService';
 import { WorldService } from '../../lib/supabase/worldService';
+import { ImageGenerationModal } from '../../components/visuals/ImageGenerationModal';
+import { ImageAssetPicker } from '../../components/visuals/ImageAssetPicker';
+import { ImageStudioService } from '../../lib/ai/imageStudioService';
 import type {
   Campaign,
   Adventure,
@@ -73,6 +77,8 @@ export const CampaignDashboardPage: React.FC<CampaignDashboardPageProps> = ({
   // Modals
   const [showEncounterModal, setShowEncounterModal] = useState(false);
   const [showTravelModal, setShowTravelModal] = useState(false);
+  const [showCampaignArtGen, setShowCampaignArtGen] = useState(false);
+  const [showCampaignArtPicker, setShowCampaignArtPicker] = useState(false);
 
   const transformHook = useMapTransform(1200, 800);
 
@@ -159,39 +165,48 @@ export const CampaignDashboardPage: React.FC<CampaignDashboardPageProps> = ({
 
       <main className="flex-1 max-w-7xl mx-auto w-full px-4 sm:px-6 lg:px-8 py-8 space-y-8">
         {/* Campaign Header Banner */}
-        <div className="glass-panel p-6 rounded-3xl border border-amber-500/20 flex flex-col md:flex-row items-start md:items-center justify-between gap-6">
-          <div className="space-y-1">
-            <div className="flex items-center gap-3">
-              <span className="text-[10px] font-mono text-amber-400 uppercase bg-amber-500/10 px-2.5 py-0.5 rounded border border-amber-500/20">
-                {campaign.genre}
-              </span>
-              <span className="text-[10px] font-mono text-slate-400 uppercase bg-slate-900 px-2 py-0.5 rounded border border-slate-800">
-                World: {world?.name || 'Realm'}
-              </span>
+        <div className="glass-panel rounded-3xl border border-amber-500/20 overflow-hidden space-y-0">
+          {campaign.coverImage && (
+            <div className="h-48 relative overflow-hidden bg-slate-950">
+              <img src={campaign.coverImage} alt={campaign.name} className="w-full h-full object-cover opacity-80" />
+              <div className="absolute inset-0 bg-gradient-to-t from-[#0b0d11] via-slate-950/40 to-transparent" />
             </div>
-            <h1 className="font-cinzel font-bold text-2xl sm:text-3xl text-slate-100">{campaign.name}</h1>
-            <p className="text-xs text-slate-300 max-w-xl">{campaign.description}</p>
-          </div>
+          )}
 
-          <div className="flex flex-wrap items-center gap-3">
-            <button
-              onClick={handleStartSession}
-              className="px-5 py-2.5 bg-gradient-to-r from-amber-500 to-amber-600 hover:from-amber-400 text-slate-950 font-bold text-xs rounded-xl shadow-lg flex items-center gap-1.5"
-            >
-              <Play className="w-4 h-4" /> Start Live Session
-            </button>
-            <button
-              onClick={() => setShowEncounterModal(true)}
-              className="px-4 py-2.5 bg-slate-900 hover:bg-slate-800 border border-slate-800 text-amber-300 font-semibold text-xs rounded-xl flex items-center gap-1.5"
-            >
-              <Shield className="w-4 h-4 text-amber-400" /> + Encounter AI
-            </button>
-            <button
-              onClick={() => setShowTravelModal(true)}
-              className="px-4 py-2.5 bg-slate-900 hover:bg-slate-800 border border-slate-800 text-sky-300 font-semibold text-xs rounded-xl flex items-center gap-1.5"
-            >
-              <Compass className="w-4 h-4 text-sky-400" /> Plan Journey AI
-            </button>
+          <div className="p-6 flex flex-col md:flex-row items-start md:items-center justify-between gap-6 bg-[#121620]">
+            <div className="space-y-1">
+              <div className="flex items-center gap-3">
+                <span className="text-[10px] font-mono text-amber-400 uppercase bg-amber-500/10 px-2.5 py-0.5 rounded border border-amber-500/20">
+                  {campaign.genre}
+                </span>
+                <span className="text-[10px] font-mono text-slate-400 uppercase bg-slate-900 px-2 py-0.5 rounded border border-slate-800">
+                  World: {world?.name || 'Realm'}
+                </span>
+              </div>
+              <h1 className="font-cinzel font-bold text-2xl sm:text-3xl text-slate-100">{campaign.name}</h1>
+              <p className="text-xs text-slate-300 max-w-xl">{campaign.description}</p>
+            </div>
+
+            <div className="flex flex-wrap items-center gap-3">
+              <button
+                onClick={() => setShowCampaignArtGen(true)}
+                className="px-3.5 py-2.5 bg-amber-500 hover:bg-amber-400 text-slate-950 font-bold text-xs rounded-xl shadow-lg flex items-center gap-1.5"
+              >
+                <Sparkles className="w-4 h-4" /> Cover AI
+              </button>
+              <button
+                onClick={() => setShowCampaignArtPicker(true)}
+                className="px-3.5 py-2.5 bg-slate-900 hover:bg-slate-800 border border-slate-800 text-slate-200 font-semibold text-xs rounded-xl flex items-center gap-1.5"
+              >
+                <ImageIcon className="w-4 h-4 text-amber-400" /> Choose Artwork
+              </button>
+              <button
+                onClick={handleStartSession}
+                className="px-4 py-2.5 bg-gradient-to-r from-amber-500 to-amber-600 hover:from-amber-400 text-slate-950 font-bold text-xs rounded-xl shadow-lg flex items-center gap-1.5"
+              >
+                <Play className="w-4 h-4" /> Live Session
+              </button>
+            </div>
           </div>
         </div>
 
@@ -397,6 +412,45 @@ export const CampaignDashboardPage: React.FC<CampaignDashboardPageProps> = ({
         <TravelPlannerModal
           worldName={world?.name || 'Realm'}
           onClose={() => setShowTravelModal(false)}
+        />
+      )}
+
+      {/* Phase 22 AI Image Generation Modal */}
+      {showCampaignArtGen && campaign && (
+        <ImageGenerationModal
+          isOpen={showCampaignArtGen}
+          onClose={() => setShowCampaignArtGen(false)}
+          entityType="campaign"
+          entityId={campaign.id}
+          entityName={campaign.name}
+          usageType="cover"
+          onAssetAttached={(asset) => {
+            setCampaign({ ...campaign, coverImage: asset.url });
+            CampaignService.saveCampaign({ ...campaign, coverImage: asset.url });
+          }}
+        />
+      )}
+
+      {/* Phase 22 Image Asset Picker Modal */}
+      {showCampaignArtPicker && campaign && (
+        <ImageAssetPicker
+          isOpen={showCampaignArtPicker}
+          onClose={() => setShowCampaignArtPicker(false)}
+          title={`Select Artwork for Campaign "${campaign.name}"`}
+          entityType="campaign"
+          entityId={campaign.id}
+          entityName={campaign.name}
+          usageType="cover"
+          onSelectAsset={async (asset) => {
+            setCampaign({ ...campaign, coverImage: asset.url });
+            await ImageStudioService.attachAssetToEntity(asset.id, 'user_current', 'campaign', campaign.id, campaign.name, 'cover');
+            CampaignService.saveCampaign({ ...campaign, coverImage: asset.url });
+          }}
+          onRemoveArtwork={async () => {
+            setCampaign({ ...campaign, coverImage: undefined });
+            await ImageStudioService.removeEntityArtwork('campaign', campaign.id, 'cover');
+            CampaignService.saveCampaign({ ...campaign, coverImage: undefined });
+          }}
         />
       )}
 

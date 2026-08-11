@@ -28,6 +28,9 @@ import { AIWorldEngine } from '../../lib/ai/aiWorldEngine';
 import { AIWorldAgent } from '../../lib/ai/aiWorldAgent';
 import { VisualAssetService } from '../../lib/ai/visualAssetService';
 import { AICommandBarModal } from '../../components/ai/AICommandBarModal';
+import { ImageGenerationModal } from '../../components/visuals/ImageGenerationModal';
+import { ImageAssetPicker } from '../../components/visuals/ImageAssetPicker';
+import { ImageStudioService } from '../../lib/ai/imageStudioService';
 import { ConsistencyCheckerModal } from '../../components/ai/ConsistencyCheckerModal';
 import { NamingAssistantModal } from '../../components/ai/NamingAssistantModal';
 import { SaveToCollectionModal } from '../../components/community/SaveToCollectionModal';
@@ -94,9 +97,11 @@ export const WorldExplorerPage: React.FC<WorldExplorerPageProps> = ({
   const [showSaveColModal, setShowSaveColModal] = useState(false);
   const [isWorldLiked, setIsWorldLiked] = useState(false);
 
-  // Phase 9 Visual Asset States
+  // Phase 22 Visual Artwork States
   const [showCreatureModal, setShowCreatureModal] = useState(false);
   const [showWorldbookModal, setShowWorldbookModal] = useState(false);
+  const [showWorldCoverGen, setShowWorldCoverGen] = useState(false);
+  const [showWorldCoverPicker, setShowWorldCoverPicker] = useState(false);
 
   // Ctrl+K Global Shortcut
   useEffect(() => {
@@ -373,10 +378,45 @@ export const WorldExplorerPage: React.FC<WorldExplorerPageProps> = ({
           {/* OVERVIEW TAB */}
           {activeTab === 'overview' && (
             <div className="space-y-8">
-              {/* World Summary Header */}
-              <div className="glass-panel p-8 rounded-2xl border border-slate-800 space-y-4">
-                <h3 className="font-cinzel font-bold text-2xl text-slate-100">{world.name} Overview</h3>
-                <p className="text-xs text-slate-300 leading-relaxed">{world.description}</p>
+              {/* World Cover Artwork Card */}
+              <div className="glass-panel rounded-3xl border border-amber-500/25 overflow-hidden space-y-0">
+                <div className="h-64 relative overflow-hidden bg-slate-950 flex items-center justify-center">
+                  <img
+                    src={world.coverImage || 'https://images.unsplash.com/photo-1518709268805-4e9042af9f23?q=80&w=1200&auto=format&fit=crop'}
+                    alt={world.name}
+                    className="w-full h-full object-cover opacity-80"
+                  />
+                  <div className="absolute inset-0 bg-gradient-to-t from-[#0b0d11] via-slate-950/40 to-transparent" />
+
+                  <div className="absolute bottom-4 left-6 right-6 flex flex-col sm:flex-row justify-between items-start sm:items-end gap-3 z-10">
+                    <div>
+                      <span className="text-[10px] font-mono text-amber-300 bg-amber-500/20 px-2.5 py-0.5 rounded uppercase border border-amber-500/30">
+                        {world.style} Worldbook
+                      </span>
+                      <h2 className="font-cinzel font-bold text-3xl text-slate-100 drop-shadow-md">{world.name}</h2>
+                    </div>
+
+                    {/* Artwork Controls */}
+                    <div className="flex flex-wrap gap-2">
+                      <button
+                        onClick={() => setShowWorldCoverGen(true)}
+                        className="px-3.5 py-1.5 bg-amber-500 hover:bg-amber-400 text-slate-950 font-bold text-xs rounded-xl shadow flex items-center gap-1.5"
+                      >
+                        <Sparkles className="w-3.5 h-3.5" /> Generate Cover with AI
+                      </button>
+                      <button
+                        onClick={() => setShowWorldCoverPicker(true)}
+                        className="px-3.5 py-1.5 bg-slate-900/90 hover:bg-slate-800 text-slate-200 font-bold text-xs rounded-xl border border-slate-700 flex items-center gap-1.5"
+                      >
+                        <Image className="w-3.5 h-3.5 text-amber-400" /> Choose from Library
+                      </button>
+                    </div>
+                  </div>
+                </div>
+
+                <div className="p-6 space-y-2 bg-[#121620]">
+                  <p className="text-xs text-slate-300 leading-relaxed font-serif">{world.description}</p>
+                </div>
               </div>
 
               {/* Major Kingdoms Grid */}
@@ -709,6 +749,45 @@ export const WorldExplorerPage: React.FC<WorldExplorerPageProps> = ({
           characters={characters}
           creatures={creatures}
           onClose={() => setShowWorldbookModal(false)}
+        />
+      )}
+
+      {/* Phase 22 AI Image Generation Modal */}
+      {showWorldCoverGen && (
+        <ImageGenerationModal
+          isOpen={showWorldCoverGen}
+          onClose={() => setShowWorldCoverGen(false)}
+          entityType="world"
+          entityId={world.id}
+          entityName={world.name}
+          usageType="cover"
+          onAssetAttached={async (asset) => {
+            setWorld({ ...world, coverImage: asset.url });
+            await WorldService.saveWorld({ ...world, coverImage: asset.url });
+          }}
+        />
+      )}
+
+      {/* Phase 22 Image Asset Picker Modal */}
+      {showWorldCoverPicker && (
+        <ImageAssetPicker
+          isOpen={showWorldCoverPicker}
+          onClose={() => setShowWorldCoverPicker(false)}
+          title={`Select Cover Artwork for ${world.name}`}
+          entityType="world"
+          entityId={world.id}
+          entityName={world.name}
+          usageType="cover"
+          onSelectAsset={async (asset) => {
+            setWorld({ ...world, coverImage: asset.url });
+            await ImageStudioService.attachAssetToEntity(asset.id, 'user_current', 'world', world.id, world.name, 'cover');
+            await WorldService.saveWorld({ ...world, coverImage: asset.url });
+          }}
+          onRemoveArtwork={async () => {
+            setWorld({ ...world, coverImage: undefined });
+            await ImageStudioService.removeEntityArtwork('world', world.id, 'cover');
+            await WorldService.saveWorld({ ...world, coverImage: undefined });
+          }}
         />
       )}
 

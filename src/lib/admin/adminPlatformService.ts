@@ -282,6 +282,12 @@ export const AdminPlatformService = {
       publicMaps: true,
       imageGen: true,
       exports: true,
+      worldArtworkGen: true,
+      npcPortraitGen: true,
+      locationArtworkGen: true,
+      factionArtworkGen: true,
+      adventureCoverGen: true,
+      campaignArtworkGen: true,
       maintenanceMode: false,
       maintenanceTitle: 'System Maintenance in Progress',
       maintenanceMessage: 'CreateFantasyMap is undergoing scheduled maintenance. We will return shortly.'

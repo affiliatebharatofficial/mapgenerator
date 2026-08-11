@@ -48,7 +48,7 @@ export interface AssetUsageRecord {
   id: string;
   assetId: string;
   userId: string;
-  entityType: 'world' | 'map' | 'npc' | 'location' | 'adventure' | 'campaign';
+  entityType: 'world' | 'map' | 'npc' | 'location' | 'faction' | 'adventure' | 'campaign';
   entityId: string;
   entityName?: string;
   usageType: 'cover' | 'portrait' | 'artwork' | 'lore' | 'map_banner';

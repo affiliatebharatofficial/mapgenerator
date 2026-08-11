@@ -317,7 +317,7 @@ export const ImageStudioService = {
   async attachAssetToEntity(
     assetId: string,
     userId: string,
-    entityType: 'world' | 'map' | 'npc' | 'location' | 'adventure' | 'campaign',
+    entityType: 'world' | 'map' | 'npc' | 'location' | 'faction' | 'adventure' | 'campaign',
     entityId: string,
     entityName?: string,
     usageType: 'cover' | 'portrait' | 'artwork' | 'lore' | 'map_banner' = 'artwork'
@@ -361,6 +361,38 @@ export const ImageStudioService = {
     }
 
     return usageRecord;
+  },
+
+  async removeEntityArtwork(
+    entityType: 'world' | 'map' | 'npc' | 'location' | 'faction' | 'adventure' | 'campaign',
+    entityId: string,
+    usageType: string = 'artwork'
+  ): Promise<void> {
+    // 1. Remove from LocalStorage usages list
+    let usages = this.getStoredUsagesLocal();
+    usages = usages.filter(
+      (u) => !(u.entityType === entityType && u.entityId === entityId && u.usageType === usageType)
+    );
+    this.saveStoredUsagesLocal(usages);
+
+    // 2. Remove from Supabase DB usages table
+    if (isSupabaseConfigured) {
+      try {
+        await supabase
+          .from('asset_usages')
+          .delete()
+          .eq('entity_type', entityType)
+          .eq('entity_id', entityId)
+          .eq('usage_type', usageType);
+      } catch {
+        // ignore
+      }
+    }
+  },
+
+  async getAssetUsages(assetId: string): Promise<AssetUsageRecord[]> {
+    const all = this.getStoredUsagesLocal();
+    return all.filter((u) => u.assetId === assetId);
   },
 
   // ----------------------------------------------------

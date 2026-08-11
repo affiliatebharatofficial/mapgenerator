@@ -82,7 +82,13 @@ export const ImageDetailModal: React.FC<ImageDetailModalProps> = ({
   };
 
   const handleDelete = async () => {
-    if (confirm('Are you sure you want to delete this fantasy artwork?')) {
+    let warningMsg = 'Are you sure you want to delete this fantasy artwork?';
+    if (image.usages && image.usages.length > 0) {
+      const usageList = image.usages.map((u) => `${u.entityName || u.entityType} (${u.usageType})`).join(', ');
+      warningMsg = `This artwork is currently used by: ${usageList}.\n\nDeleting will archive the asset and return entity display to placeholders. Are you sure you want to proceed?`;
+    }
+
+    if (confirm(warningMsg)) {
       setIsDeleting(true);
       await ImageStudioService.deleteAsset(image.id);
       setIsDeleting(false);

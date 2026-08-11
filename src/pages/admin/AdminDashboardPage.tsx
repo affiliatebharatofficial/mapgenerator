@@ -1426,6 +1426,67 @@ export const AdminDashboardPage: React.FC<AdminDashboardPageProps> = ({ onNaviga
                   rows={2}
                 />
               )}
+
+              {/* Entity-Specific Artwork Generation Flags */}
+              <div className="pt-4 border-t border-slate-900 space-y-2">
+                <h4 className="font-cinzel font-bold text-amber-300 text-xs uppercase tracking-wider">Entity-Specific AI Artwork Generation Controls</h4>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-2 font-mono">
+                  <label className="flex items-center justify-between p-2.5 bg-slate-950 rounded-xl border border-slate-800 cursor-pointer">
+                    <span className="text-slate-300 text-xs">Generate World Artwork</span>
+                    <input
+                      type="checkbox"
+                      checked={featureFlags.worldArtworkGen !== false}
+                      onChange={(e) => setFeatureFlags({ ...featureFlags, worldArtworkGen: e.target.checked })}
+                      className="accent-amber-500 w-4 h-4"
+                    />
+                  </label>
+                  <label className="flex items-center justify-between p-2.5 bg-slate-950 rounded-xl border border-slate-800 cursor-pointer">
+                    <span className="text-slate-300 text-xs">Generate NPC Portraits</span>
+                    <input
+                      type="checkbox"
+                      checked={featureFlags.npcPortraitGen !== false}
+                      onChange={(e) => setFeatureFlags({ ...featureFlags, npcPortraitGen: e.target.checked })}
+                      className="accent-amber-500 w-4 h-4"
+                    />
+                  </label>
+                  <label className="flex items-center justify-between p-2.5 bg-slate-950 rounded-xl border border-slate-800 cursor-pointer">
+                    <span className="text-slate-300 text-xs">Generate Location Artwork</span>
+                    <input
+                      type="checkbox"
+                      checked={featureFlags.locationArtworkGen !== false}
+                      onChange={(e) => setFeatureFlags({ ...featureFlags, locationArtworkGen: e.target.checked })}
+                      className="accent-amber-500 w-4 h-4"
+                    />
+                  </label>
+                  <label className="flex items-center justify-between p-2.5 bg-slate-950 rounded-xl border border-slate-800 cursor-pointer">
+                    <span className="text-slate-300 text-xs">Generate Faction Artwork</span>
+                    <input
+                      type="checkbox"
+                      checked={featureFlags.factionArtworkGen !== false}
+                      onChange={(e) => setFeatureFlags({ ...featureFlags, factionArtworkGen: e.target.checked })}
+                      className="accent-amber-500 w-4 h-4"
+                    />
+                  </label>
+                  <label className="flex items-center justify-between p-2.5 bg-slate-950 rounded-xl border border-slate-800 cursor-pointer">
+                    <span className="text-slate-300 text-xs">Generate Adventure Covers</span>
+                    <input
+                      type="checkbox"
+                      checked={featureFlags.adventureCoverGen !== false}
+                      onChange={(e) => setFeatureFlags({ ...featureFlags, adventureCoverGen: e.target.checked })}
+                      className="accent-amber-500 w-4 h-4"
+                    />
+                  </label>
+                  <label className="flex items-center justify-between p-2.5 bg-slate-950 rounded-xl border border-slate-800 cursor-pointer">
+                    <span className="text-slate-300 text-xs">Generate Campaign Artwork</span>
+                    <input
+                      type="checkbox"
+                      checked={featureFlags.campaignArtworkGen !== false}
+                      onChange={(e) => setFeatureFlags({ ...featureFlags, campaignArtworkGen: e.target.checked })}
+                      className="accent-amber-500 w-4 h-4"
+                    />
+                  </label>
+                </div>
+              </div>
             </div>
 
             <div className="pt-2 flex justify-end">

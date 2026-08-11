@@ -77,6 +77,18 @@ export const PlatformConfigService = {
     return (flags as any)[flagKey] !== false;
   },
 
+  isEntityArtworkEnabled(entityType: string): boolean {
+    const flags = AdminPlatformService.getFeatureFlags();
+    if (flags.maintenanceMode || flags.imageGen === false) return false;
+    if (entityType === 'world') return flags.worldArtworkGen !== false;
+    if (entityType === 'npc') return flags.npcPortraitGen !== false;
+    if (entityType === 'location') return flags.locationArtworkGen !== false;
+    if (entityType === 'faction') return flags.factionArtworkGen !== false;
+    if (entityType === 'adventure') return flags.adventureCoverGen !== false;
+    if (entityType === 'campaign') return flags.campaignArtworkGen !== false;
+    return true;
+  },
+
   // ----------------------------------------------------
   // 2. DYNAMIC CREDIT COST CATALOG
   // ----------------------------------------------------

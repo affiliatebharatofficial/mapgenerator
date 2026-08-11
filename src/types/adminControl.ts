@@ -50,6 +50,12 @@ export interface FeatureFlags {
   publicMaps: boolean;
   imageGen: boolean;
   exports: boolean;
+  worldArtworkGen?: boolean;
+  npcPortraitGen?: boolean;
+  locationArtworkGen?: boolean;
+  factionArtworkGen?: boolean;
+  adventureCoverGen?: boolean;
+  campaignArtworkGen?: boolean;
   maintenanceMode: boolean;
   maintenanceTitle: string;
   maintenanceMessage: string;
