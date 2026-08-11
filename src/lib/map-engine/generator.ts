@@ -73,14 +73,13 @@ export function generateFantasyMap(config: GeneratorConfig): FantasyMap {
   let customRealmName = config.name || `${mapType.toUpperCase()} OF ELDORIA`;
 
   if (mapType === 'india') {
-    customSeaName = 'INDIAN OCEAN';
-    customRealmName = config.name || 'REALM OF BHARAT (INDIA)';
-    // Iconic Indian Peninsula SVG path
-    coastline = `M 380 120 Q 600 110 820 120 Q 840 240 760 360 Q 720 450 600 740 Q 480 450 420 350 Q 340 240 380 120 Z`;
+    customSeaName = 'INDIAN OCEAN (ARABIAN SEA & BAY OF BENGAL)';
+    customRealmName = config.name || 'GREAT REALM OF BHARAT (INDIA)';
+    // Accurate Detailed Indian Subcontinent SVG path with Kashmir Crown, Gujarat Peninsula & Islands
+    coastline = `M 580 60 L 630 70 L 650 120 L 710 160 L 770 170 L 830 150 L 920 180 L 940 230 L 890 280 L 810 270 L 770 320 L 760 380 L 700 460 L 640 560 L 590 730 L 570 730 L 520 600 L 480 480 L 450 380 L 380 370 L 340 330 L 400 290 L 430 310 L 440 240 L 500 160 Z M 840 560 A 8 8 0 1 1 840 576 A 8 8 0 1 1 840 560 M 850 620 A 10 10 0 1 1 850 640 A 10 10 0 1 1 850 620 M 460 640 A 6 6 0 1 1 460 652 A 6 6 0 1 1 460 640`;
   } else if (mapType === 'usa') {
     customSeaName = 'ATLANTIC & PACIFIC OCEANS';
     customRealmName = config.name || 'UNITED REALMS OF AMERICA';
-    // Continental USA shape
     coastline = `M 150 160 Q 450 140 750 160 L 980 200 Q 1060 400 1020 540 L 900 580 L 860 700 L 780 580 L 480 560 L 280 620 L 120 420 Z`;
   } else if (mapType === 'europe') {
     customSeaName = 'MEDITERRANEAN & NORTH SEA';
@@ -89,13 +88,31 @@ export function generateFantasyMap(config: GeneratorConfig): FantasyMap {
   } else if (mapType === 'japan') {
     customSeaName = 'PACIFIC OCEAN & SEA OF JAPAN';
     customRealmName = config.name || 'JAPANESE ARCHIPELAGO';
-    // Curved Island Arc (Honshu, Hokkaido, Kyushu)
     coastline = `M 780 140 Q 860 120 920 180 Q 880 240 820 220 Z M 520 280 Q 720 200 780 340 Q 620 480 480 400 Z M 340 460 Q 440 440 420 560 Q 320 540 340 460 Z`;
   } else if (mapType === 'uk') {
     customSeaName = 'NORTH SEA & IRISH SEA';
     customRealmName = config.name || 'THE BRITISH ISLES';
-    // Great Britain & Ireland twin islands
     coastline = `M 580 140 Q 720 120 700 320 Q 780 480 640 680 Q 520 520 560 380 Z M 320 320 Q 440 300 420 480 Q 300 520 320 320 Z`;
+  } else if (mapType === 'australia') {
+    customSeaName = 'SOUTHERN & INDIAN OCEANS';
+    customRealmName = config.name || 'COMMONWEALTH REALM OF AUSTRALIA';
+    coastline = `M 420 180 Q 520 140 560 220 Q 640 120 700 240 Q 860 220 920 360 Q 980 500 880 600 Q 680 640 520 620 Q 320 640 220 520 Q 180 340 320 260 Z M 720 660 Q 760 660 740 700 Q 700 700 720 660 Z`;
+  } else if (mapType === 'canada') {
+    customSeaName = 'ARCTIC & ATLANTIC OCEANS';
+    customRealmName = config.name || 'DOMINION REALM OF CANADA';
+    coastline = `M 150 180 L 450 140 L 620 220 L 780 160 L 980 180 L 1050 340 L 950 500 L 750 480 L 450 520 L 180 480 Z M 650 280 Q 750 260 720 380 Q 620 360 650 280 Z`;
+  } else if (mapType === 'brazil') {
+    customSeaName = 'ATLANTIC OCEAN & AMAZON BASIN';
+    customRealmName = config.name || 'FEDERATIVE REALM OF BRAZIL';
+    coastline = `M 350 180 Q 650 140 850 220 Q 950 380 820 540 Q 680 680 520 660 Q 400 520 280 380 Z`;
+  } else if (mapType === 'italy') {
+    customSeaName = 'MEDITERRANEAN & ADRIATIC SEAS';
+    customRealmName = config.name || 'REPUBLIC REALM OF ITALY';
+    coastline = `M 380 160 Q 620 140 680 220 L 620 340 L 740 480 L 820 560 L 780 620 L 680 560 L 580 420 L 520 320 Z M 580 640 Q 660 620 640 700 Q 560 680 580 640 Z M 360 380 Q 420 360 400 500 Q 340 480 360 380 Z`;
+  } else if (mapType === 'egypt') {
+    customSeaName = 'MEDITERRANEAN & RED SEA';
+    customRealmName = config.name || 'ANCIENT REALM OF EGYPT';
+    coastline = `M 280 180 Q 520 160 820 180 L 850 440 L 780 640 L 320 640 Z`;
   } else if (mapType === 'island') {
     const rx = width * 0.25;
     const ry = height * 0.25;

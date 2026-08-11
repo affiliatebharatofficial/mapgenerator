@@ -42,11 +42,16 @@ export const GeneratorControls: React.FC<GeneratorControlsProps> = ({
   ];
 
   const realWorldTypes: { id: MapType; label: string; icon: string; desc: string }[] = [
-    { id: 'india', label: 'India (Bharat)', icon: '🇮🇳', desc: 'Himalayan north & southern peninsula' },
+    { id: 'india', label: 'India (Bharat)', icon: '🇮🇳', desc: 'Himalayas, Peninsula & Kutch Gulf' },
     { id: 'usa', label: 'USA (America)', icon: '🇺🇸', desc: 'East/West coastlines & central plains' },
     { id: 'europe', label: 'Europe', icon: '🇪🇺', desc: 'Peninsular coastlines & Mediterranean' },
     { id: 'japan', label: 'Japan', icon: '🇯🇵', desc: 'Curved volcanic island arc' },
-    { id: 'uk', label: 'UK (Britain)', icon: '🇬🇧', desc: 'Great Britain & Ireland island realm' }
+    { id: 'uk', label: 'UK (Britain)', icon: '🇬🇧', desc: 'Great Britain & Ireland twin islands' },
+    { id: 'australia', label: 'Australia', icon: '🇦🇺', desc: 'Southern continent island realm' },
+    { id: 'canada', label: 'Canada', icon: '🇨🇦', desc: 'Great Lakes & Hudson Bay expanse' },
+    { id: 'brazil', label: 'Brazil', icon: '🇧🇷', desc: 'Amazon basin & South American coast' },
+    { id: 'italy', label: 'Italy', icon: '🇮🇹', desc: 'Iconic Mediterranean boot shape' },
+    { id: 'egypt', label: 'Egypt', icon: '🇪🇬', desc: 'Nile River delta & Red Sea coast' }
   ];
 
   const handleStyleSelect = (styleId: MapStyle) => {
