@@ -1,4 +1,5 @@
 import type { PlanId } from '../../config/plans';
+import { PlatformConfigService } from '../config/platformConfigService';
 
 export interface SubscriptionStatusInfo {
   planId: PlanId;
@@ -19,6 +20,10 @@ const LOCAL_SUB_KEY = 'createfantasymap_user_subscription';
 
 export const MockBillingProvider: BillingProvider = {
   async createCheckoutSession(planId: PlanId, _userId: string, _billingInterval = 'month') {
+    const config = PlatformConfigService.getMasterConfig();
+    if (!config.paymentSystemEnabled || !config.monetizationEnabled || config.freeLaunchMode) {
+      throw new Error('Payment System is currently disabled during Free Launch Mode.');
+    }
     // Simulated checkout session URL
     return {
       checkoutUrl: `/checkout/success?plan=${planId}`

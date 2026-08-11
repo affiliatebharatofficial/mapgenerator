@@ -1,10 +1,11 @@
 import React, { useState } from 'react';
 import { Header } from '../components/layout/Header';
 import { Footer } from '../components/layout/Footer';
-import { Sparkles, Check, X, HelpCircle } from 'lucide-react';
+import { Sparkles, Check, X, HelpCircle, Gift } from 'lucide-react';
 import { PLANS, type PlanId } from '../config/plans';
 import { useSubscription } from '../lib/supabase/subscriptionStore';
 import { useAuth } from '../lib/supabase/authStore';
+import { PlatformConfigService } from '../lib/config/platformConfigService';
 
 interface PricingPageProps {
   onNavigateCreate: () => void;
@@ -21,7 +22,15 @@ export const PricingPage: React.FC<PricingPageProps> = ({
   const { isAuthenticated } = useAuth();
   const [billingCycle, setBillingCycle] = useState<'monthly' | 'annual'>('monthly');
 
+  const masterConfig = PlatformConfigService.getMasterConfig();
+  const isFreeLaunchMode = masterConfig.freeLaunchMode || !masterConfig.monetizationEnabled;
+
   const handleSelectPlan = async (planId: PlanId) => {
+    if (isFreeLaunchMode) {
+      onNavigateCreate();
+      return;
+    }
+
     if (!isAuthenticated && planId !== 'free') {
       onNavigateLogin();
       return;
@@ -41,6 +50,25 @@ export const PricingPage: React.FC<PricingPageProps> = ({
       <Header onNavigateCreate={onNavigateCreate} onNavigateHome={onNavigateHome} />
 
       <main className="flex-1 max-w-7xl mx-auto w-full px-4 sm:px-6 lg:px-8 py-16 space-y-16 z-10">
+        {/* Free Launch Banner (Spec #35) */}
+        {isFreeLaunchMode && (
+          <div className="p-6 bg-gradient-to-r from-emerald-500/20 via-amber-500/15 to-emerald-500/20 rounded-3xl border border-emerald-500/40 text-center space-y-2 max-w-4xl mx-auto">
+            <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-emerald-500/20 text-emerald-300 text-xs font-bold border border-emerald-500/40">
+              <Gift className="w-4 h-4" /> 100% FREE LAUNCH MODE ACTIVE
+            </div>
+            <h2 className="font-cinzel font-bold text-xl text-slate-100">All Map Generator Features & Exports Are Currently 100% Free!</h2>
+            <p className="text-xs text-slate-300 max-w-xl mx-auto">
+              CreateFantasyMap is operating in 100% Free Launch Mode. No payment, credit card, or subscription purchase is required to generate maps, artwork, or high-res exports.
+            </p>
+            <button
+              onClick={onNavigateCreate}
+              className="mt-2 px-6 py-2.5 bg-amber-500 hover:bg-amber-400 text-slate-950 font-bold text-xs rounded-xl shadow font-mono"
+            >
+              Start Creating Maps Free Now →
+            </button>
+          </div>
+        )}
+
         {/* Hero Section */}
         <div className="text-center max-w-3xl mx-auto space-y-4">
           <div className="inline-flex items-center gap-1.5 px-3.5 py-1 rounded-full bg-amber-500/10 text-amber-400 text-xs font-semibold border border-amber-500/20">

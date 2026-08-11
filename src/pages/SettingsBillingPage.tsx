@@ -1,9 +1,10 @@
 import React from 'react';
 import { Header } from '../components/layout/Header';
 import { Footer } from '../components/layout/Footer';
-import { CreditCard, Sparkles, Database, History } from 'lucide-react';
+import { CreditCard, Sparkles, Database, History, Gift } from 'lucide-react';
 import { useSubscription } from '../lib/supabase/subscriptionStore';
 import { PLANS } from '../config/plans';
+import { PlatformConfigService } from '../lib/config/platformConfigService';
 
 interface SettingsBillingPageProps {
   onNavigateCreate: () => void;
@@ -18,6 +19,9 @@ export const SettingsBillingPage: React.FC<SettingsBillingPageProps> = ({
 }) => {
   const { subscription, currentPlan, creditsRemaining, creditsTotal, creditsUsed, transactions, cancelSubscription } = useSubscription();
   const plan = PLANS[currentPlan] || PLANS.free;
+
+  const masterConfig = PlatformConfigService.getMasterConfig();
+  const isFreeLaunchMode = masterConfig.freeLaunchMode || !masterConfig.monetizationEnabled;
 
   const creditUsagePercent = Math.min(100, Math.round((creditsUsed / creditsTotal) * 100));
 
@@ -37,6 +41,18 @@ export const SettingsBillingPage: React.FC<SettingsBillingPageProps> = ({
             <p className="text-xs text-slate-400">Manage your subscription plan, credit usage, and transaction logs.</p>
           </div>
         </div>
+
+        {/* Free Launch Mode Notice (Spec #34) */}
+        {isFreeLaunchMode && (
+          <div className="p-6 bg-gradient-to-r from-emerald-500/15 via-amber-500/10 to-emerald-500/15 rounded-2xl border border-emerald-500/30 space-y-2">
+            <div className="flex items-center gap-2 text-emerald-300 font-cinzel font-bold text-sm">
+              <Gift className="w-4 h-4" /> 100% FREE LAUNCH MODE ACTIVE
+            </div>
+            <p className="text-xs text-slate-300">
+              Billing & checkout are currently inactive. All platform features, map generations, AI artwork, and high-resolution exports are unlocked for free during launch.
+            </p>
+          </div>
+        )}
 
         {/* Current Plan Overview Card */}
         <div className="glass-panel p-8 rounded-2xl border border-amber-500/20 space-y-6">

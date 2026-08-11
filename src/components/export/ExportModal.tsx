@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { Download, X, Lock, Sparkles, FileText, Image as ImageIcon, FileCode } from 'lucide-react';
 import { useSubscription } from '../../lib/supabase/subscriptionStore';
 import { exportMapPNG, exportMapToSVG, exportMapToPDF } from '../../lib/map-engine/exporter';
+import { PlatformConfigService } from '../../lib/config/platformConfigService';
 
 interface ExportModalProps {
   svgElement: SVGSVGElement | null;
@@ -17,9 +18,15 @@ export const ExportModal: React.FC<ExportModalProps> = ({
   onNavigatePricing
 }) => {
   const { currentPlan, hasEntitlement } = useSubscription();
+  const masterConfig = PlatformConfigService.getMasterConfig();
 
-  const [format, setFormat] = useState<'png' | 'svg' | 'pdf'>('png');
-  const [resolution, setResolution] = useState<'standard' | 'hd' | 'ultra_hd'>('hd');
+  const isPngEnabled = PlatformConfigService.isExportFormatEnabled('png');
+  const isSvgEnabled = PlatformConfigService.isExportFormatEnabled('svg');
+  const isPdfEnabled = PlatformConfigService.isExportFormatEnabled('pdf');
+
+  const defaultFormat = isPngEnabled ? 'png' : isSvgEnabled ? 'svg' : 'pdf';
+  const [format, setFormat] = useState<'png' | 'svg' | 'pdf'>(defaultFormat);
+  const [resolution, setResolution] = useState<'standard' | 'hd' | 'ultra_hd'>('ultra_hd');
   const [isExporting, setIsExporting] = useState(false);
 
   const canExportSVG = hasEntitlement('svg_export');
@@ -27,9 +34,10 @@ export const ExportModal: React.FC<ExportModalProps> = ({
   const canExportHD = hasEntitlement('hd_export');
   const canExportUltraHD = hasEntitlement('ultra_hd_export');
 
-  // Check if chosen format/res requires upgrade
-  const formatLocked = (format === 'svg' && !canExportSVG) || (format === 'pdf' && !canExportPDF);
-  const resolutionLocked = (resolution === 'hd' && !canExportHD) || (resolution === 'ultra_hd' && !canExportUltraHD);
+  // Check if chosen format/res requires upgrade (Bypassed if Free Launch Mode = ON)
+  const isFreeLaunch = masterConfig.freeLaunchMode || !masterConfig.monetizationEnabled;
+  const formatLocked = !isFreeLaunch && ((format === 'svg' && !canExportSVG) || (format === 'pdf' && !canExportPDF));
+  const resolutionLocked = !isFreeLaunch && ((resolution === 'hd' && !canExportHD) || (resolution === 'ultra_hd' && !canExportUltraHD));
   const requiresUpgrade = formatLocked || resolutionLocked;
 
   const handleExport = async () => {
@@ -43,8 +51,9 @@ export const ExportModal: React.FC<ExportModalProps> = ({
     setIsExporting(true);
 
     try {
+      const applyWatermark = !isFreeLaunch && currentPlan === 'free';
       if (format === 'png') {
-        await exportMapPNG(svgElement, mapName, resolution, currentPlan === 'free');
+        await exportMapPNG(svgElement, mapName, resolution, applyWatermark);
       } else if (format === 'svg') {
         exportMapToSVG(svgElement, mapName);
       } else if (format === 'pdf') {
@@ -80,58 +89,64 @@ export const ExportModal: React.FC<ExportModalProps> = ({
         {/* Export Format Selector */}
         <div className="space-y-2">
           <label className="text-xs font-semibold text-slate-300">File Format</label>
-          <div className="grid grid-cols-3 gap-3">
-            <button
-              type="button"
-              onClick={() => setFormat('png')}
-              className={`p-3 rounded-xl border text-center transition-all ${
-                format === 'png'
-                  ? 'bg-amber-500/15 border-amber-500/40 text-amber-200'
-                  : 'bg-slate-950/60 border-slate-800 text-slate-400 hover:border-slate-700'
-              }`}
-            >
-              <ImageIcon className="w-5 h-5 mx-auto mb-1 text-amber-400" />
-              <div className="text-xs font-bold">PNG Image</div>
-              <div className="text-[10px] text-slate-500">Raster Image</div>
-            </button>
+          <div className="grid grid-cols-3 gap-2">
+            {isPngEnabled && (
+              <button
+                type="button"
+                onClick={() => setFormat('png')}
+                className={`p-3 rounded-xl border text-center relative transition-all ${
+                  format === 'png'
+                    ? 'bg-amber-500/15 border-amber-500/40 text-amber-200'
+                    : 'bg-slate-950/60 border-slate-800 text-slate-400 hover:border-slate-700'
+                }`}
+              >
+                <ImageIcon className="w-5 h-5 mx-auto mb-1 text-amber-400" />
+                <div className="text-xs font-bold">PNG Image</div>
+                <div className="text-[10px] text-slate-500">Raster Image</div>
+              </button>
+            )}
 
-            <button
-              type="button"
-              onClick={() => setFormat('svg')}
-              className={`p-3 rounded-xl border text-center relative transition-all ${
-                format === 'svg'
-                  ? 'bg-amber-500/15 border-amber-500/40 text-amber-200'
-                  : 'bg-slate-950/60 border-slate-800 text-slate-400 hover:border-slate-700'
-              }`}
-            >
-              {!canExportSVG && (
-                <span className="absolute top-2 right-2 text-[9px] font-bold bg-amber-500 text-slate-950 px-1.5 py-0.5 rounded flex items-center gap-0.5">
-                  <Lock className="w-2.5 h-2.5" /> PRO
-                </span>
-              )}
-              <FileCode className="w-5 h-5 mx-auto mb-1 text-sky-400" />
-              <div className="text-xs font-bold">SVG Vector</div>
-              <div className="text-[10px] text-slate-500">Scalable Vector</div>
-            </button>
+            {isSvgEnabled && (
+              <button
+                type="button"
+                onClick={() => setFormat('svg')}
+                className={`p-3 rounded-xl border text-center relative transition-all ${
+                  format === 'svg'
+                    ? 'bg-amber-500/15 border-amber-500/40 text-amber-200'
+                    : 'bg-slate-950/60 border-slate-800 text-slate-400 hover:border-slate-700'
+                }`}
+              >
+                {!isFreeLaunch && !canExportSVG && (
+                  <span className="absolute top-2 right-2 text-[9px] font-bold bg-amber-500 text-slate-950 px-1.5 py-0.5 rounded flex items-center gap-0.5">
+                    <Lock className="w-2.5 h-2.5" /> PRO
+                  </span>
+                )}
+                <FileCode className="w-5 h-5 mx-auto mb-1 text-sky-400" />
+                <div className="text-xs font-bold">SVG Vector</div>
+                <div className="text-[10px] text-slate-500">Scalable Vector</div>
+              </button>
+            )}
 
-            <button
-              type="button"
-              onClick={() => setFormat('pdf')}
-              className={`p-3 rounded-xl border text-center relative transition-all ${
-                format === 'pdf'
-                  ? 'bg-amber-500/15 border-amber-500/40 text-amber-200'
-                  : 'bg-slate-950/60 border-slate-800 text-slate-400 hover:border-slate-700'
-              }`}
-            >
-              {!canExportPDF && (
-                <span className="absolute top-2 right-2 text-[9px] font-bold bg-amber-500 text-slate-950 px-1.5 py-0.5 rounded flex items-center gap-0.5">
-                  <Lock className="w-2.5 h-2.5" /> PRO
-                </span>
-              )}
-              <FileText className="w-5 h-5 mx-auto mb-1 text-emerald-400" />
-              <div className="text-xs font-bold">PDF Document</div>
-              <div className="text-[10px] text-slate-500">Print Ready</div>
-            </button>
+            {isPdfEnabled && (
+              <button
+                type="button"
+                onClick={() => setFormat('pdf')}
+                className={`p-3 rounded-xl border text-center relative transition-all ${
+                  format === 'pdf'
+                    ? 'bg-amber-500/15 border-amber-500/40 text-amber-200'
+                    : 'bg-slate-950/60 border-slate-800 text-slate-400 hover:border-slate-700'
+                }`}
+              >
+                {!isFreeLaunch && !canExportPDF && (
+                  <span className="absolute top-2 right-2 text-[9px] font-bold bg-amber-500 text-slate-950 px-1.5 py-0.5 rounded flex items-center gap-0.5">
+                    <Lock className="w-2.5 h-2.5" /> PRO
+                  </span>
+                )}
+                <FileText className="w-5 h-5 mx-auto mb-1 text-emerald-400" />
+                <div className="text-xs font-bold">PDF Doc</div>
+                <div className="text-[10px] text-slate-500">Print Ready</div>
+              </button>
+            )}
           </div>
         </div>
 

@@ -3,6 +3,7 @@ import type { PlanId, EntitlementKey } from '../../config/plans';
 import { checkPlanEntitlement, getDynamicPlanConfig } from '../../config/plans';
 import { useAuth } from './authStore';
 import { MockBillingProvider, setMockUserPlan, type SubscriptionStatusInfo } from '../billing/billingProvider';
+import { PlatformConfigService } from '../config/platformConfigService';
 
 export interface CreditTransaction {
   id: string;
@@ -95,6 +96,10 @@ export const SubscriptionProvider: React.FC<{ children: React.ReactNode }> = ({ 
 
   const hasEntitlement = useCallback(
     (key: EntitlementKey): boolean => {
+      const masterConfig = PlatformConfigService.getMasterConfig();
+      if (masterConfig.freeLaunchMode || !masterConfig.monetizationEnabled) {
+        return true;
+      }
       return checkPlanEntitlement(currentPlan, key);
     },
     [currentPlan]
@@ -102,6 +107,11 @@ export const SubscriptionProvider: React.FC<{ children: React.ReactNode }> = ({ 
 
   const deductCredits = useCallback(
     (amount: number, description: string): boolean => {
+      const masterConfig = PlatformConfigService.getMasterConfig();
+      if (masterConfig.freeLaunchMode || !masterConfig.monetizationEnabled || !masterConfig.creditSystemEnabled || masterConfig.freeGenerationMode) {
+        return true;
+      }
+
       if (creditsRemaining < amount) return false;
 
       const newUsed = creditsUsed + amount;

@@ -41,7 +41,7 @@ import {
   Trash2
 } from 'lucide-react';
 import { AdminPlatformService } from '../../lib/admin/adminPlatformService';
-import { PlatformConfigService, type CreditCostCatalogItem, type MapProceduralConfig, type AIPromptTemplate, type EmergencyControls, type SubscriptionPlanItem } from '../../lib/config/platformConfigService';
+import { PlatformConfigService, type CreditCostCatalogItem, type MapProceduralConfig, type AIPromptTemplate, type EmergencyControls, type SubscriptionPlanItem, type MasterFeatureControlConfig, type FeatureAccessRule } from '../../lib/config/platformConfigService';
 import type {
   AdminSystemMetrics,
   SystemHealthStatus,
@@ -193,6 +193,15 @@ export const AdminDashboardPage: React.FC<AdminDashboardPageProps> = ({ onNaviga
   useEffect(() => {
     loadAdminData();
   }, []);
+
+  const [masterConfig, setMasterConfig] = useState<MasterFeatureControlConfig>(() => PlatformConfigService.getMasterConfig());
+
+  const handleSaveMasterConfig = (updated: MasterFeatureControlConfig) => {
+    PlatformConfigService.saveMasterConfig(updated);
+    setMasterConfig(updated);
+    setAuditLogs(AdminPlatformService.getAuditLogs());
+    alert('Master Feature Controls & Free Launch Mode configuration saved!');
+  };
 
   const [auditLogs, setAuditLogs] = useState<AuditLogEntry[]>(() => AdminPlatformService.getAuditLogs());
   const [aiLogs] = useState<AILogEntry[]>(() => AdminPlatformService.getAILogs());
@@ -1670,12 +1679,321 @@ export const AdminDashboardPage: React.FC<AdminDashboardPageProps> = ({ onNaviga
           </div>
         )}
 
-        {/* 6. FEATURE FLAGS */}
+        {/* 6. MASTER FEATURE CONTROLS & FREE LAUNCH MODE (PHASE 25) */}
         {activeTab === 'features' && (
-          <div className="glass-panel p-6 rounded-3xl border border-slate-800 space-y-6 text-xs">
-            <h3 className="font-cinzel font-bold text-base text-slate-100">Platform Feature Flags & Maintenance Mode</h3>
+          <div className="space-y-6 text-xs">
+            {/* PRODUCT QUICK STATUS BANNER (Spec #46) */}
+            <div className="glass-panel p-5 rounded-3xl border border-amber-500/30 bg-slate-950/80 space-y-3 font-mono">
+              <div className="flex justify-between items-center pb-3 border-b border-slate-800">
+                <span className="font-cinzel font-bold text-sm text-amber-300">PRODUCT STATUS QUICK OVERVIEW</span>
+                <span className="text-[11px] text-slate-400">Live Production Mode Evaluator</span>
+              </div>
+              <div className="grid grid-cols-2 md:grid-cols-5 gap-3 text-center text-[11px]">
+                <div className="p-3 bg-slate-900 rounded-2xl border border-slate-800">
+                  <span className="text-slate-400 block text-[10px]">Launch Mode</span>
+                  <span className={`font-bold ${masterConfig.freeLaunchMode ? 'text-emerald-400' : 'text-amber-400'}`}>
+                    ● {masterConfig.freeLaunchMode ? 'Free Launch' : 'Paid Mode'}
+                  </span>
+                </div>
+                <div className="p-3 bg-slate-900 rounded-2xl border border-slate-800">
+                  <span className="text-slate-400 block text-[10px]">Payment System</span>
+                  <span className={`font-bold ${masterConfig.paymentSystemEnabled ? 'text-emerald-400' : 'text-slate-500'}`}>
+                    ● {masterConfig.paymentSystemEnabled ? 'Enabled' : 'Disabled'}
+                  </span>
+                </div>
+                <div className="p-3 bg-slate-900 rounded-2xl border border-slate-800">
+                  <span className="text-slate-400 block text-[10px]">Credit System</span>
+                  <span className={`font-bold ${masterConfig.creditSystemEnabled ? 'text-emerald-400' : 'text-slate-500'}`}>
+                    ● {masterConfig.creditSystemEnabled ? 'Enabled' : 'Disabled'}
+                  </span>
+                </div>
+                <div className="p-3 bg-slate-900 rounded-2xl border border-slate-800">
+                  <span className="text-slate-400 block text-[10px]">Map Generation</span>
+                  <span className={`font-bold ${masterConfig.features.map_generation?.enabled ? 'text-emerald-400' : 'text-rose-400'}`}>
+                    ● {masterConfig.features.map_generation?.enabled ? 'Enabled' : 'Disabled'}
+                  </span>
+                </div>
+                <div className="p-3 bg-slate-900 rounded-2xl border border-slate-800">
+                  <span className="text-slate-400 block text-[10px]">Image Generation</span>
+                  <span className={`font-bold ${masterConfig.features.ai_image_generation?.enabled ? 'text-emerald-400' : 'text-rose-400'}`}>
+                    ● {masterConfig.features.ai_image_generation?.enabled ? 'Enabled' : 'Disabled'}
+                  </span>
+                </div>
+              </div>
+            </div>
 
-            <div className="space-y-3">
+            {/* MASTER FREE LAUNCH MODE CARD (Spec #24) */}
+            <div className={`glass-panel p-6 rounded-3xl border transition-all ${
+              masterConfig.freeLaunchMode ? 'border-emerald-500/40 bg-emerald-950/10' : 'border-slate-800'
+            }`}>
+              <div className="flex justify-between items-start">
+                <div className="space-y-1">
+                  <div className="flex items-center gap-2">
+                    <h3 className="font-cinzel font-bold text-base text-amber-300">MASTER FREE LAUNCH MODE</h3>
+                    <span className={`px-2.5 py-0.5 rounded-full font-mono text-[10px] uppercase font-bold border ${
+                      masterConfig.freeLaunchMode ? 'bg-emerald-500/20 text-emerald-300 border-emerald-500/40' : 'bg-amber-500/20 text-amber-300 border-amber-500/40'
+                    }`}>
+                      ● {masterConfig.freeLaunchMode ? 'ACTIVE' : 'INACTIVE'}
+                    </span>
+                  </div>
+                  <p className="text-slate-300 text-xs max-w-2xl">
+                    All configured user features operate without payment, credit, or paid subscription requirements.
+                    Users can sign up, create worlds, generate maps, edit maps, generate artwork, and download exports 100% free.
+                  </p>
+                </div>
+                <button
+                  onClick={() => {
+                    const nextMode = !masterConfig.freeLaunchMode;
+                    if (!nextMode && !confirm('WARNING: Disabling Free Launch Mode will start enforcing payment, credit, or paid plan requirements according to feature matrix rules. Proceed?')) {
+                      return;
+                    }
+                    handleSaveMasterConfig({ ...masterConfig, freeLaunchMode: nextMode });
+                  }}
+                  className={`px-5 py-2.5 rounded-xl font-bold font-mono text-xs transition-all shadow ${
+                    masterConfig.freeLaunchMode
+                      ? 'bg-amber-500 hover:bg-amber-400 text-slate-950'
+                      : 'bg-emerald-500 hover:bg-emerald-400 text-slate-950'
+                  }`}
+                >
+                  {masterConfig.freeLaunchMode ? 'Disable Free Launch Mode' : 'Enable Free Launch Mode'}
+                </button>
+              </div>
+            </div>
+
+            {/* FEATURE CONTROLS MATRIX TABLE (Spec #17 & #18) */}
+            <div className="glass-panel p-6 rounded-3xl border border-slate-800 space-y-4">
+              <div className="flex justify-between items-center">
+                <div>
+                  <h3 className="font-cinzel font-bold text-base text-amber-300">Feature Access Matrix & Requirements</h3>
+                  <p className="text-slate-400 text-xs">Configure granular access requirements for each core platform feature.</p>
+                </div>
+                <button
+                  onClick={() => handleSaveMasterConfig(masterConfig)}
+                  className="px-5 py-2 bg-amber-500 hover:bg-amber-400 text-slate-950 font-bold rounded-xl shadow"
+                >
+                  Save Feature Matrix
+                </button>
+              </div>
+
+              <div className="overflow-x-auto">
+                <table className="w-full text-left border-collapse font-mono text-xs">
+                  <thead>
+                    <tr className="border-b border-slate-800 text-slate-400 text-[11px] uppercase">
+                      <th className="p-3">Feature Name</th>
+                      <th className="p-3">Enabled</th>
+                      <th className="p-3">Login Required</th>
+                      <th className="p-3">Credits Required</th>
+                      <th className="p-3">Paid Plan Required</th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-slate-800/80">
+                    {Object.values(masterConfig.features).map((feat) => (
+                      <tr key={feat.key} className="hover:bg-slate-900/40">
+                        <td className="p-3 font-cinzel font-bold text-slate-200 text-sm">{feat.name}</td>
+                        <td className="p-3">
+                          <input
+                            type="checkbox"
+                            checked={feat.enabled}
+                            onChange={(e) => {
+                              const updatedFeatures = {
+                                ...masterConfig.features,
+                                [feat.key]: { ...feat, enabled: e.target.checked }
+                              };
+                              setMasterConfig({ ...masterConfig, features: updatedFeatures });
+                            }}
+                            className="accent-amber-500 w-4 h-4 cursor-pointer"
+                          />
+                        </td>
+                        <td className="p-3">
+                          <input
+                            type="checkbox"
+                            checked={feat.requires_login}
+                            onChange={(e) => {
+                              const updatedFeatures = {
+                                ...masterConfig.features,
+                                [feat.key]: { ...feat, requires_login: e.target.checked }
+                              };
+                              setMasterConfig({ ...masterConfig, features: updatedFeatures });
+                            }}
+                            className="accent-amber-500 w-4 h-4 cursor-pointer"
+                          />
+                        </td>
+                        <td className="p-3">
+                          <input
+                            type="checkbox"
+                            checked={feat.requires_credits}
+                            onChange={(e) => {
+                              const updatedFeatures = {
+                                ...masterConfig.features,
+                                [feat.key]: { ...feat, requires_credits: e.target.checked }
+                              };
+                              setMasterConfig({ ...masterConfig, features: updatedFeatures });
+                            }}
+                            className="accent-amber-500 w-4 h-4 cursor-pointer"
+                          />
+                        </td>
+                        <td className="p-3">
+                          <input
+                            type="checkbox"
+                            checked={feat.requires_paid_plan}
+                            onChange={(e) => {
+                              const updatedFeatures = {
+                                ...masterConfig.features,
+                                [feat.key]: { ...feat, requires_paid_plan: e.target.checked }
+                              };
+                              setMasterConfig({ ...masterConfig, features: updatedFeatures });
+                            }}
+                            className="accent-amber-500 w-4 h-4 cursor-pointer"
+                          />
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            </div>
+
+            {/* MONETIZATION & PAYMENTS MASTER SWITCHES (Spec #2, #3, #6, #7, #8, #31) */}
+            <div className="glass-panel p-6 rounded-3xl border border-slate-800 space-y-6">
+              <h3 className="font-cinzel font-bold text-base text-amber-300">Monetization, Payment & Credit Master Switches</h3>
+
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4 font-mono text-xs">
+                <label className="flex items-center justify-between p-3.5 bg-slate-950 rounded-2xl border border-slate-800 cursor-pointer">
+                  <div>
+                    <strong className="text-slate-200 block text-xs">Global Monetization Enabled</strong>
+                    <span className="text-slate-400 text-[10px]">Master switch for all paid features & paywalls.</span>
+                  </div>
+                  <input
+                    type="checkbox"
+                    checked={masterConfig.monetizationEnabled}
+                    onChange={(e) => setMasterConfig({ ...masterConfig, monetizationEnabled: e.target.checked })}
+                    className="accent-amber-500 w-4 h-4 cursor-pointer"
+                  />
+                </label>
+
+                <label className="flex items-center justify-between p-3.5 bg-slate-950 rounded-2xl border border-slate-800 cursor-pointer">
+                  <div>
+                    <strong className="text-slate-200 block text-xs">Payment System Master Switch</strong>
+                    <span className="text-slate-400 text-[10px]">Controls checkout API sessions & purchases.</span>
+                  </div>
+                  <input
+                    type="checkbox"
+                    checked={masterConfig.paymentSystemEnabled}
+                    onChange={(e) => setMasterConfig({ ...masterConfig, paymentSystemEnabled: e.target.checked })}
+                    className="accent-amber-500 w-4 h-4 cursor-pointer"
+                  />
+                </label>
+
+                <label className="flex items-center justify-between p-3.5 bg-slate-950 rounded-2xl border border-slate-800 cursor-pointer">
+                  <div>
+                    <strong className="text-slate-200 block text-xs">Subscriptions System Enabled</strong>
+                    <span className="text-slate-400 text-[10px]">Controls plan upgrades & pricing CTAs.</span>
+                  </div>
+                  <input
+                    type="checkbox"
+                    checked={masterConfig.subscriptionsEnabled}
+                    onChange={(e) => setMasterConfig({ ...masterConfig, subscriptionsEnabled: e.target.checked })}
+                    className="accent-amber-500 w-4 h-4 cursor-pointer"
+                  />
+                </label>
+
+                <label className="flex items-center justify-between p-3.5 bg-slate-950 rounded-2xl border border-slate-800 cursor-pointer">
+                  <div>
+                    <strong className="text-slate-200 block text-xs">Credit System Master Switch</strong>
+                    <span className="text-slate-400 text-[10px]">Requires credit balance for generations when active.</span>
+                  </div>
+                  <input
+                    type="checkbox"
+                    checked={masterConfig.creditSystemEnabled}
+                    onChange={(e) => setMasterConfig({ ...masterConfig, creditSystemEnabled: e.target.checked })}
+                    className="accent-amber-500 w-4 h-4 cursor-pointer"
+                  />
+                </label>
+
+                <label className="flex items-center justify-between p-3.5 bg-slate-950 rounded-2xl border border-slate-800 cursor-pointer">
+                  <div>
+                    <strong className="text-slate-200 block text-xs">Free Generation Mode</strong>
+                    <span className="text-slate-400 text-[10px]">When ON, generations do not consume user credits.</span>
+                  </div>
+                  <input
+                    type="checkbox"
+                    checked={masterConfig.freeGenerationMode}
+                    onChange={(e) => setMasterConfig({ ...masterConfig, freeGenerationMode: e.target.checked })}
+                    className="accent-amber-500 w-4 h-4 cursor-pointer"
+                  />
+                </label>
+
+                <label className="flex items-center justify-between p-3.5 bg-slate-950 rounded-2xl border border-slate-800 cursor-pointer">
+                  <div>
+                    <strong className="text-slate-200 block text-xs">Usage Limits Enabled</strong>
+                    <span className="text-slate-400 text-[10px]">Enforces monthly map/world quota caps.</span>
+                  </div>
+                  <input
+                    type="checkbox"
+                    checked={masterConfig.usageLimitsEnabled}
+                    onChange={(e) => setMasterConfig({ ...masterConfig, usageLimitsEnabled: e.target.checked })}
+                    className="accent-amber-500 w-4 h-4 cursor-pointer"
+                  />
+                </label>
+              </div>
+
+              {/* PAYMENT PROVIDERS & EXPORT FORMATS */}
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6 pt-4 border-t border-slate-800">
+                {/* Payment Providers (Spec #4) */}
+                <div className="space-y-3 font-mono text-xs">
+                  <h4 className="font-cinzel font-bold text-slate-200 text-sm">Payment Providers Controls</h4>
+                  <label className="flex items-center justify-between p-3 bg-slate-950 rounded-xl border border-slate-800 cursor-pointer">
+                    <span className="text-slate-300">Lemon Squeezy Integration</span>
+                    <input
+                      type="checkbox"
+                      checked={masterConfig.paymentProviders?.lemonSqueezy}
+                      onChange={(e) => setMasterConfig({
+                        ...masterConfig,
+                        paymentProviders: { ...masterConfig.paymentProviders, lemonSqueezy: e.target.checked }
+                      })}
+                      className="accent-amber-500 w-4 h-4"
+                    />
+                  </label>
+                  <label className="flex items-center justify-between p-3 bg-slate-950 rounded-xl border border-slate-800 cursor-pointer">
+                    <span className="text-slate-300">Stripe Integration</span>
+                    <input
+                      type="checkbox"
+                      checked={masterConfig.paymentProviders?.stripe}
+                      onChange={(e) => setMasterConfig({
+                        ...masterConfig,
+                        paymentProviders: { ...masterConfig.paymentProviders, stripe: e.target.checked }
+                      })}
+                      className="accent-amber-500 w-4 h-4"
+                    />
+                  </label>
+                </div>
+
+                {/* Export Formats (Spec #16) */}
+                <div className="space-y-3 font-mono text-xs">
+                  <h4 className="font-cinzel font-bold text-slate-200 text-sm">Allowed Export Formats Matrix</h4>
+                  <div className="grid grid-cols-2 gap-2">
+                    {['png', 'jpeg', 'webp', 'pdf', 'svg'].map((fmt) => (
+                      <label key={fmt} className="flex items-center justify-between p-2.5 bg-slate-950 rounded-xl border border-slate-800 cursor-pointer uppercase">
+                        <span className="text-slate-300 font-bold">{fmt}</span>
+                        <input
+                          type="checkbox"
+                          checked={(masterConfig.exportFormats as any)[fmt] !== false}
+                          onChange={(e) => setMasterConfig({
+                            ...masterConfig,
+                            exportFormats: { ...masterConfig.exportFormats, [fmt]: e.target.checked }
+                          })}
+                          className="accent-amber-500 w-4 h-4"
+                        />
+                      </label>
+                    ))}
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            {/* MAINTENANCE MODE & ARTWORK CONTROL */}
+            <div className="glass-panel p-6 rounded-3xl border border-slate-800 space-y-4 text-xs">
+              <h3 className="font-cinzel font-bold text-base text-slate-100">Maintenance Mode & Legacy Entity Flags</h3>
               <label className="flex items-center justify-between p-3 bg-slate-950 rounded-xl border border-slate-800 cursor-pointer">
                 <div>
                   <strong className="font-cinzel text-slate-200 block">Maintenance Mode</strong>
@@ -1693,76 +2011,21 @@ export const AdminDashboardPage: React.FC<AdminDashboardPageProps> = ({ onNaviga
                 <textarea
                   value={featureFlags.maintenanceMessage}
                   onChange={(e) => setFeatureFlags({ ...featureFlags, maintenanceMessage: e.target.value })}
-                  className="w-full bg-slate-950 border border-slate-800 rounded-xl p-3 text-slate-200 focus:outline-none"
+                  className="w-full bg-slate-950 border border-slate-800 rounded-xl p-3 text-slate-200 focus:outline-none font-mono"
                   rows={2}
                 />
               )}
-
-              {/* Entity-Specific Artwork Generation Flags */}
-              <div className="pt-4 border-t border-slate-900 space-y-2">
-                <h4 className="font-cinzel font-bold text-amber-300 text-xs uppercase tracking-wider">Entity-Specific AI Artwork Generation Controls</h4>
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-2 font-mono">
-                  <label className="flex items-center justify-between p-2.5 bg-slate-950 rounded-xl border border-slate-800 cursor-pointer">
-                    <span className="text-slate-300 text-xs">Generate World Artwork</span>
-                    <input
-                      type="checkbox"
-                      checked={featureFlags.worldArtworkGen !== false}
-                      onChange={(e) => setFeatureFlags({ ...featureFlags, worldArtworkGen: e.target.checked })}
-                      className="accent-amber-500 w-4 h-4"
-                    />
-                  </label>
-                  <label className="flex items-center justify-between p-2.5 bg-slate-950 rounded-xl border border-slate-800 cursor-pointer">
-                    <span className="text-slate-300 text-xs">Generate NPC Portraits</span>
-                    <input
-                      type="checkbox"
-                      checked={featureFlags.npcPortraitGen !== false}
-                      onChange={(e) => setFeatureFlags({ ...featureFlags, npcPortraitGen: e.target.checked })}
-                      className="accent-amber-500 w-4 h-4"
-                    />
-                  </label>
-                  <label className="flex items-center justify-between p-2.5 bg-slate-950 rounded-xl border border-slate-800 cursor-pointer">
-                    <span className="text-slate-300 text-xs">Generate Location Artwork</span>
-                    <input
-                      type="checkbox"
-                      checked={featureFlags.locationArtworkGen !== false}
-                      onChange={(e) => setFeatureFlags({ ...featureFlags, locationArtworkGen: e.target.checked })}
-                      className="accent-amber-500 w-4 h-4"
-                    />
-                  </label>
-                  <label className="flex items-center justify-between p-2.5 bg-slate-950 rounded-xl border border-slate-800 cursor-pointer">
-                    <span className="text-slate-300 text-xs">Generate Faction Artwork</span>
-                    <input
-                      type="checkbox"
-                      checked={featureFlags.factionArtworkGen !== false}
-                      onChange={(e) => setFeatureFlags({ ...featureFlags, factionArtworkGen: e.target.checked })}
-                      className="accent-amber-500 w-4 h-4"
-                    />
-                  </label>
-                  <label className="flex items-center justify-between p-2.5 bg-slate-950 rounded-xl border border-slate-800 cursor-pointer">
-                    <span className="text-slate-300 text-xs">Generate Adventure Covers</span>
-                    <input
-                      type="checkbox"
-                      checked={featureFlags.adventureCoverGen !== false}
-                      onChange={(e) => setFeatureFlags({ ...featureFlags, adventureCoverGen: e.target.checked })}
-                      className="accent-amber-500 w-4 h-4"
-                    />
-                  </label>
-                  <label className="flex items-center justify-between p-2.5 bg-slate-950 rounded-xl border border-slate-800 cursor-pointer">
-                    <span className="text-slate-300 text-xs">Generate Campaign Artwork</span>
-                    <input
-                      type="checkbox"
-                      checked={featureFlags.campaignArtworkGen !== false}
-                      onChange={(e) => setFeatureFlags({ ...featureFlags, campaignArtworkGen: e.target.checked })}
-                      className="accent-amber-500 w-4 h-4"
-                    />
-                  </label>
-                </div>
-              </div>
             </div>
 
             <div className="pt-2 flex justify-end">
-              <button onClick={handleSaveFlags} className="px-5 py-2.5 bg-amber-500 hover:bg-amber-400 text-slate-950 font-bold text-xs rounded-xl shadow">
-                Save Feature Configuration
+              <button
+                onClick={() => {
+                  handleSaveMasterConfig(masterConfig);
+                  handleSaveFlags();
+                }}
+                className="px-6 py-3 bg-gradient-to-r from-amber-500 to-amber-600 hover:from-amber-400 hover:to-amber-500 text-slate-950 font-bold text-xs rounded-xl shadow-lg shadow-amber-500/20"
+              >
+                Save Master Feature Controls
               </button>
             </div>
           </div>

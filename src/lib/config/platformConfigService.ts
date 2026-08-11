@@ -25,6 +25,47 @@ const CONFIG_AI_PROMPTS_KEY = 'createfantasymap_config_ai_prompts';
 const CONFIG_EMERGENCY_KEY = 'createfantasymap_config_emergency';
 const CONFIG_SUBSCRIPTION_PLANS_KEY = 'createfantasymap_config_subscription_plans';
 
+const CONFIG_MASTER_FEATURE_CONTROL_KEY = 'createfantasymap_config_master_features';
+
+export interface FeatureAccessRule {
+  key: string;
+  name: string;
+  enabled: boolean;
+  requires_login: boolean;
+  requires_credits: boolean;
+  requires_paid_plan: boolean;
+}
+
+export interface ExportFormatControls {
+  png: boolean;
+  jpeg: boolean;
+  webp: boolean;
+  pdf: boolean;
+  svg: boolean;
+}
+
+export interface PaymentProviderControls {
+  lemonSqueezy: boolean;
+  stripe: boolean;
+}
+
+export interface MasterFeatureControlConfig {
+  freeLaunchMode: boolean;
+  monetizationEnabled: boolean;
+  paymentSystemEnabled: boolean;
+  subscriptionsEnabled: boolean;
+  creditSystemEnabled: boolean;
+  freeGenerationMode: boolean;
+  usageLimitsEnabled: boolean;
+  pricingPageEnabled: boolean;
+  paymentProviders: PaymentProviderControls;
+  features: Record<string, FeatureAccessRule>;
+  exportFormats: ExportFormatControls;
+  maintenanceMode: boolean;
+  maintenanceTitle: string;
+  maintenanceMessage: string;
+}
+
 export interface CreditCostCatalogItem {
   key: string;
   name: string;
@@ -70,6 +111,106 @@ export interface EmergencyControls {
 }
 
 export const PlatformConfigService = {
+  // ----------------------------------------------------
+  // 0. MASTER FEATURE CONTROL & ACCESS EVALUATOR (PHASE 25)
+  // ----------------------------------------------------
+  getMasterConfig(): MasterFeatureControlConfig {
+    const data = localStorage.getItem(CONFIG_MASTER_FEATURE_CONTROL_KEY);
+    if (data) {
+      try {
+        return JSON.parse(data);
+      } catch {
+        // Fallback default
+      }
+    }
+    return {
+      freeLaunchMode: true,
+      monetizationEnabled: false,
+      paymentSystemEnabled: false,
+      subscriptionsEnabled: false,
+      creditSystemEnabled: false,
+      freeGenerationMode: true,
+      usageLimitsEnabled: false,
+      pricingPageEnabled: false,
+      paymentProviders: {
+        lemonSqueezy: false,
+        stripe: false
+      },
+      features: {
+        world_creation: { key: 'world_creation', name: 'World Creation', enabled: true, requires_login: true, requires_credits: false, requires_paid_plan: false },
+        map_generation: { key: 'map_generation', name: 'Map Generation', enabled: true, requires_login: true, requires_credits: false, requires_paid_plan: false },
+        map_editor: { key: 'map_editor', name: 'Map Editor', enabled: true, requires_login: true, requires_credits: false, requires_paid_plan: false },
+        map_export: { key: 'map_export', name: 'Map Export', enabled: true, requires_login: true, requires_credits: false, requires_paid_plan: false },
+        ai_image_generation: { key: 'ai_image_generation', name: 'AI Image Generation', enabled: true, requires_login: true, requires_credits: false, requires_paid_plan: false },
+        image_library: { key: 'image_library', name: 'Image Library', enabled: true, requires_login: true, requires_credits: false, requires_paid_plan: false }
+      },
+      exportFormats: {
+        png: true,
+        jpeg: true,
+        webp: true,
+        pdf: false,
+        svg: true
+      },
+      maintenanceMode: false,
+      maintenanceTitle: 'System Maintenance in Progress',
+      maintenanceMessage: 'CreateFantasyMap is undergoing scheduled maintenance. We will return shortly.'
+    };
+  },
+
+  saveMasterConfig(config: MasterFeatureControlConfig) {
+    localStorage.setItem(CONFIG_MASTER_FEATURE_CONTROL_KEY, JSON.stringify(config));
+    AdminPlatformService.addAuditLog(
+      'Update Master Feature Control',
+      'Platform Engine',
+      `Free Launch Mode: ${config.freeLaunchMode ? 'ON' : 'OFF'} | Monetization: ${config.monetizationEnabled ? 'ON' : 'OFF'}`
+    );
+  },
+
+  evaluateAccess(featureKey: string, isUserLoggedIn: boolean = true, userCredits: number = 999, userPlan: string = 'free'): { allowed: boolean; reason?: string } {
+    const config = this.getMasterConfig();
+
+    if (config.maintenanceMode) {
+      return { allowed: false, reason: config.maintenanceMessage || 'System maintenance in progress.' };
+    }
+
+    const feature = config.features[featureKey];
+    // 1. Feature Enabled Check (Highest Priority)
+    if (feature && !feature.enabled) {
+      return { allowed: false, reason: `${feature.name} is currently disabled by Admin.` };
+    }
+
+    // 2. Authentication Requirement Check
+    if (feature && feature.requires_login && !isUserLoggedIn) {
+      return { allowed: false, reason: 'Authentication required. Please log in to access this feature.' };
+    }
+
+    // 3. Free Launch Mode / Monetization Disabled Check (Bypass paywalls/credits!)
+    if (config.freeLaunchMode || !config.monetizationEnabled) {
+      return { allowed: true };
+    }
+
+    // 4. Credit Requirement Check
+    if (config.creditSystemEnabled && !config.freeGenerationMode && feature?.requires_credits) {
+      if (userCredits <= 0) {
+        return { allowed: false, reason: 'Insufficient AI credits balance.' };
+      }
+    }
+
+    // 5. Paid Plan Requirement Check
+    if (config.subscriptionsEnabled && feature?.requires_paid_plan) {
+      if (userPlan === 'free') {
+        return { allowed: false, reason: 'This feature requires an active Paid Subscription Plan.' };
+      }
+    }
+
+    return { allowed: true };
+  },
+
+  isExportFormatEnabled(format: 'png' | 'jpeg' | 'webp' | 'pdf' | 'svg'): boolean {
+    const config = this.getMasterConfig();
+    return config.exportFormats[format] ?? true;
+  },
+
   // ----------------------------------------------------
   // 1. FEATURE FLAG EVALUATION
   // ----------------------------------------------------
