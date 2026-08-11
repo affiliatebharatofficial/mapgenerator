@@ -437,7 +437,10 @@ export const CreatePage: React.FC<CreatePageProps> = ({
 
   // Generate Map Action
   const handleGenerate = useCallback(() => {
-    const newMap = generateFantasyMap(config);
+    const newSeed = Math.floor(Math.random() * 899999) + 100000;
+    const newConfig = { ...config, seed: newSeed };
+    setConfig(newConfig);
+    const newMap = generateFantasyMap(newConfig);
     pushState(newMap);
     setSelectedObject(null);
   }, [config, pushState]);

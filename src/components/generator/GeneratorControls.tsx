@@ -42,11 +42,6 @@ export const GeneratorControls: React.FC<GeneratorControlsProps> = ({
   ];
 
   const handleStyleSelect = (styleId: MapStyle) => {
-    const isPremiumStyle = ['dark-fantasy', 'hand-drawn', 'rpg'].includes(styleId);
-    if (isPremiumStyle && !canUsePremiumStyles && onSelectLockedStyle) {
-      onSelectLockedStyle(styleId);
-      return;
-    }
     onChangeConfig({ ...config, style: styleId });
   };
 
