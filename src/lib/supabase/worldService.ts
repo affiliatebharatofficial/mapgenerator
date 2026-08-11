@@ -219,6 +219,10 @@ function saveStoredArray<T>(key: string, val: T[]): void {
 
 export const WorldService = {
   // Worlds CRUD
+  async getAllWorlds(): Promise<World[]> {
+    return getStoredArray<World>(WORLDS_KEY, [INITIAL_SHOWCASE_WORLD]);
+  },
+
   async getUserWorlds(userId: string): Promise<World[]> {
     const worlds = getStoredArray<World>(WORLDS_KEY, [INITIAL_SHOWCASE_WORLD]);
     return worlds.filter((w) => w.userId === userId || w.isPublic);

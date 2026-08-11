@@ -37,7 +37,8 @@ import {
   Lock,
   Archive,
   BarChart3,
-  Palette
+  Palette,
+  Trash2
 } from 'lucide-react';
 import { AdminPlatformService } from '../../lib/admin/adminPlatformService';
 import { PlatformConfigService, type CreditCostCatalogItem, type MapProceduralConfig, type AIPromptTemplate, type EmergencyControls, type SubscriptionPlanItem } from '../../lib/config/platformConfigService';
@@ -56,6 +57,9 @@ import type {
 } from '../../types/adminControl';
 import { ImageProviderRouter, type ImageGenerationLogRecord } from '../../lib/ai/imageProviderRouter';
 import { RunwareImageProvider } from '../../lib/ai/runwareProvider';
+import { WorldService } from '../../lib/supabase/worldService';
+import { MapService } from '../../lib/supabase/mapService';
+import { CampaignService } from '../../lib/supabase/campaignService';
 
 interface AdminDashboardPageProps {
   onNavigateHome: () => void;
@@ -172,6 +176,23 @@ export const AdminDashboardPage: React.FC<AdminDashboardPageProps> = ({ onNaviga
   const [users, setUsers] = useState<AdminUserItem[]>([]);
   const [userSearch, setUserSearch] = useState('');
   const [selectedUser, setSelectedUser] = useState<AdminUserItem | null>(null);
+
+  const [adminWorlds, setAdminWorlds] = useState<any[]>([]);
+  const [adminMaps, setAdminMaps] = useState<any[]>([]);
+  const [adminCampaigns, setAdminCampaigns] = useState<any[]>([]);
+
+  const loadAdminData = async () => {
+    const w = await WorldService.getAllWorlds();
+    const m = await MapService.getAllMaps();
+    const c = CampaignService.getAllCampaigns();
+    setAdminWorlds(w);
+    setAdminMaps(m);
+    setAdminCampaigns(c);
+  };
+
+  useEffect(() => {
+    loadAdminData();
+  }, []);
 
   const [auditLogs, setAuditLogs] = useState<AuditLogEntry[]>(() => AdminPlatformService.getAuditLogs());
   const [aiLogs] = useState<AILogEntry[]>(() => AdminPlatformService.getAILogs());
@@ -725,6 +746,207 @@ export const AdminDashboardPage: React.FC<AdminDashboardPageProps> = ({ onNaviga
                         className="px-3 py-1.5 bg-slate-800 hover:bg-slate-700 text-slate-200 font-bold text-xs rounded-xl border border-slate-700"
                       >
                         Adjust Credits
+                      </button>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+        )}
+
+        {/* WORLDS DIRECTORY */}
+        {activeTab === 'worlds' && (
+          <div className="space-y-6 text-xs">
+            <div className="flex justify-between items-center">
+              <div>
+                <h3 className="font-cinzel font-bold text-base text-amber-300">Created Worlds Directory</h3>
+                <p className="text-slate-400 text-xs">Super Admin view of all fantasy worlds created across the platform.</p>
+              </div>
+              <span className="font-mono text-amber-400 font-bold bg-amber-500/10 px-3 py-1 rounded-xl border border-amber-500/20">
+                {adminWorlds.length} Total Worlds
+              </span>
+            </div>
+
+            {adminWorlds.length === 0 ? (
+              <div className="glass-panel p-8 rounded-2xl border border-slate-800 text-center text-slate-400 font-mono">
+                No worlds found in database.
+              </div>
+            ) : (
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                {adminWorlds.map((w) => (
+                  <div key={w.id} className="glass-panel p-5 rounded-2xl border border-slate-800 space-y-3">
+                    <div className="flex justify-between items-start">
+                      <div>
+                        <strong className="font-cinzel font-bold text-sm text-slate-100 block">{w.name}</strong>
+                        <span className="text-[11px] font-mono text-slate-400">ID: {w.id} • Owner: {w.userId}</span>
+                      </div>
+                      <span className={`text-[10px] font-mono uppercase px-2 py-0.5 rounded font-bold border ${w.isPublic ? 'bg-emerald-500/20 text-emerald-300 border-emerald-500/40' : 'bg-slate-800 text-slate-400 border-slate-700'}`}>
+                        {w.isPublic ? 'PUBLIC' : 'PRIVATE'}
+                      </span>
+                    </div>
+                    <p className="text-slate-300 line-clamp-2 text-xs">{w.description}</p>
+                    <div className="flex justify-between items-center pt-2 border-t border-slate-800/80 font-mono text-[11px]">
+                      <span className="text-amber-400">Maps: {(w.mapIds || []).length} • Style: {w.style}</span>
+                      <button
+                        onClick={async () => {
+                          if (confirm(`Delete world "${w.name}"?`)) {
+                            await WorldService.deleteWorld(w.id);
+                            loadAdminData();
+                          }
+                        }}
+                        className="p-1 text-slate-500 hover:text-rose-400"
+                      >
+                        <Trash2 className="w-4 h-4" />
+                      </button>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+        )}
+
+        {/* MAPS CATALOG */}
+        {activeTab === 'maps' && (
+          <div className="space-y-6 text-xs">
+            <div className="flex justify-between items-center">
+              <div>
+                <h3 className="font-cinzel font-bold text-base text-amber-300">Generated Maps Catalog</h3>
+                <p className="text-slate-400 text-xs">Super Admin view of all procedural and custom saved maps.</p>
+              </div>
+              <span className="font-mono text-amber-400 font-bold bg-amber-500/10 px-3 py-1 rounded-xl border border-amber-500/20">
+                {adminMaps.length} Total Maps
+              </span>
+            </div>
+
+            {adminMaps.length === 0 ? (
+              <div className="glass-panel p-8 rounded-2xl border border-slate-800 text-center text-slate-400 font-mono">
+                No maps found in catalog.
+              </div>
+            ) : (
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                {adminMaps.map((m) => (
+                  <div key={m.id} className="glass-panel p-5 rounded-2xl border border-slate-800 space-y-3">
+                    <div className="flex justify-between items-start">
+                      <div>
+                        <strong className="font-cinzel font-bold text-sm text-slate-100 block">{m.title}</strong>
+                        <span className="text-[11px] font-mono text-slate-400">ID: {m.id} • Author: {m.author_name || m.user_id}</span>
+                      </div>
+                      <span className={`text-[10px] font-mono uppercase px-2 py-0.5 rounded font-bold border ${m.is_public ? 'bg-emerald-500/20 text-emerald-300 border-emerald-500/40' : 'bg-slate-800 text-slate-400 border-slate-700'}`}>
+                        {m.is_public ? 'PUBLIC' : 'PRIVATE'}
+                      </span>
+                    </div>
+                    <p className="text-slate-300 line-clamp-2 text-xs">{m.description || 'No description provided.'}</p>
+                    <div className="flex justify-between items-center pt-2 border-t border-slate-800/80 font-mono text-[11px]">
+                      <span className="text-amber-400">Seed: {m.seed} • Type: {m.map_type} • Style: {m.map_style}</span>
+                      <button
+                        onClick={async () => {
+                          if (confirm(`Delete map "${m.title}"?`)) {
+                            await MapService.deleteMap(m.id);
+                            loadAdminData();
+                          }
+                        }}
+                        className="p-1 text-slate-500 hover:text-rose-400"
+                      >
+                        <Trash2 className="w-4 h-4" />
+                      </button>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+        )}
+
+        {/* MAP GENERATOR PARAMETERS */}
+        {activeTab === 'map_generator' && (
+          <div className="glass-panel p-6 rounded-3xl border border-slate-800 space-y-6 text-xs">
+            <div className="flex justify-between items-center">
+              <div>
+                <h3 className="font-cinzel font-bold text-base text-amber-300">Map Generator Procedural Defaults</h3>
+                <p className="text-slate-400 text-xs">Configure platform-wide procedural algorithm parameters and defaults.</p>
+              </div>
+              <button
+                onClick={handleSaveMapProcedural}
+                className="px-5 py-2 bg-amber-500 hover:bg-amber-400 text-slate-950 font-bold rounded-xl shadow"
+              >
+                Save Generator Defaults
+              </button>
+            </div>
+
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 font-mono text-xs">
+              <div className="p-4 bg-slate-950 rounded-2xl border border-slate-800 space-y-2">
+                <label className="text-slate-300 font-bold block">Default Sea Level ({mapProcedural.defaultSeaLevel || 0.35})</label>
+                <input
+                  type="range"
+                  min="0.1"
+                  max="0.8"
+                  step="0.05"
+                  value={mapProcedural.defaultSeaLevel || 0.35}
+                  onChange={(e) => setMapProcedural({ ...mapProcedural, defaultSeaLevel: parseFloat(e.target.value) })}
+                  className="w-full accent-amber-500"
+                />
+              </div>
+
+              <div className="p-4 bg-slate-950 rounded-2xl border border-slate-800 space-y-2">
+                <label className="text-slate-300 font-bold block">Default Settlement Density ({mapProcedural.defaultSettlementDensity || 10})</label>
+                <input
+                  type="range"
+                  min="2"
+                  max="20"
+                  value={mapProcedural.defaultSettlementDensity || 10}
+                  onChange={(e) => setMapProcedural({ ...mapProcedural, defaultSettlementDensity: parseInt(e.target.value) })}
+                  className="w-full accent-amber-500"
+                />
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* CAMPAIGNS DIRECTORY */}
+        {activeTab === 'campaigns' && (
+          <div className="space-y-6 text-xs">
+            <div className="flex justify-between items-center">
+              <div>
+                <h3 className="font-cinzel font-bold text-base text-amber-300">RPG Campaign Directory</h3>
+                <p className="text-slate-400 text-xs">Super Admin view of all RPG campaigns, GM workspaces, and adventure modules.</p>
+              </div>
+              <span className="font-mono text-amber-400 font-bold bg-amber-500/10 px-3 py-1 rounded-xl border border-amber-500/20">
+                {adminCampaigns.length} Total Campaigns
+              </span>
+            </div>
+
+            {adminCampaigns.length === 0 ? (
+              <div className="glass-panel p-8 rounded-2xl border border-slate-800 text-center text-slate-400 font-mono">
+                No campaigns found in directory.
+              </div>
+            ) : (
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                {adminCampaigns.map((c) => (
+                  <div key={c.id} className="glass-panel p-5 rounded-2xl border border-slate-800 space-y-3">
+                    <div className="flex justify-between items-start">
+                      <div>
+                        <strong className="font-cinzel font-bold text-sm text-slate-100 block">{c.name}</strong>
+                        <span className="text-[11px] font-mono text-slate-400">ID: {c.id} • GM: {c.userId}</span>
+                      </div>
+                      <span className="text-[10px] font-mono uppercase px-2 py-0.5 rounded font-bold border bg-amber-500/20 text-amber-300 border-amber-500/40">
+                        {c.system || '5e RPG'}
+                      </span>
+                    </div>
+                    <p className="text-slate-300 line-clamp-2 text-xs">{c.description || 'No campaign description.'}</p>
+                    <div className="flex justify-between items-center pt-2 border-t border-slate-800/80 font-mono text-[11px]">
+                      <span className="text-amber-400">Status: {c.status || 'Active'}</span>
+                      <button
+                        onClick={() => {
+                          if (confirm(`Delete campaign "${c.name}"?`)) {
+                            CampaignService.deleteCampaign(c.id);
+                            loadAdminData();
+                          }
+                        }}
+                        className="p-1 text-slate-500 hover:text-rose-400"
+                      >
+                        <Trash2 className="w-4 h-4" />
                       </button>
                     </div>
                   </div>

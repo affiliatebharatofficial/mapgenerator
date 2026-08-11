@@ -42,6 +42,8 @@ export interface MapProceduralConfig {
   forestDensity: number;
   islandProbability: number;
   coastRoughness: number;
+  defaultSeaLevel?: number;
+  defaultSettlementDensity?: number;
 }
 
 export interface AIPromptTemplateVersion {

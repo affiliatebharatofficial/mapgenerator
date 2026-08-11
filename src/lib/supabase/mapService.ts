@@ -219,6 +219,11 @@ export function slugifyTitle(title: string, id: string): string {
 
 // Map Data Service APIs
 export const MapService = {
+  // Fetch all maps for admin management
+  async getAllMaps(): Promise<CloudMapRecord[]> {
+    return getStoredCloudMaps();
+  },
+
   // Fetch user's saved maps for dashboard
   async getUserMaps(userId: string): Promise<CloudMapRecord[]> {
     const all = getStoredCloudMaps();
@@ -434,11 +439,12 @@ export const MapService = {
   },
 
   // Delete Map
-  async deleteMap(mapId: string, userId: string): Promise<boolean> {
+  async deleteMap(mapId: string, userId: string = 'admin'): Promise<boolean> {
     let all = getStoredCloudMaps();
     const map = all.find((m) => m.id === mapId);
 
-    if (!map || map.user_id !== userId) return false;
+    if (!map) return false;
+    if (userId !== 'admin' && map.user_id !== userId) return false;
 
     all = all.filter((m) => m.id !== mapId);
     saveStoredCloudMaps(all);

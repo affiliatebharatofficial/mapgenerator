@@ -26,6 +26,11 @@ export const CampaignService = {
   // ----------------------------
   // 1. CAMPAIGNS CRUD
   // ----------------------------
+  getAllCampaigns(): Campaign[] {
+    const data = localStorage.getItem(CAMPAIGNS_KEY);
+    return data ? JSON.parse(data) : [];
+  },
+
   getUserCampaigns(userId: string): Campaign[] {
     const data = localStorage.getItem(CAMPAIGNS_KEY);
     const list: Campaign[] = data ? JSON.parse(data) : [];
