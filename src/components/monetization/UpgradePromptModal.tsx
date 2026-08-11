@@ -1,0 +1,56 @@
+import React from 'react';
+import { Sparkles, X, Lock } from 'lucide-react';
+
+interface UpgradePromptModalProps {
+  featureName: string;
+  featureDescription?: string;
+  onClose: () => void;
+  onNavigatePricing: () => void;
+}
+
+export const UpgradePromptModal: React.FC<UpgradePromptModalProps> = ({
+  featureName,
+  featureDescription,
+  onClose,
+  onNavigatePricing
+}) => {
+  return (
+    <div className="fixed inset-0 z-50 bg-slate-950/80 backdrop-blur-sm flex items-center justify-center p-4">
+      <div className="bg-[#121620] border border-amber-500/30 p-6 rounded-2xl max-w-md w-full space-y-5 shadow-2xl relative text-center">
+        <button onClick={onClose} className="absolute top-4 right-4 text-slate-400 hover:text-slate-100">
+          <X className="w-5 h-5" />
+        </button>
+
+        <div className="w-14 h-14 rounded-2xl bg-amber-500/10 border border-amber-500/20 mx-auto flex items-center justify-center text-amber-400 shadow-xl">
+          <Lock className="w-7 h-7" />
+        </div>
+
+        <div className="space-y-2">
+          <h3 className="font-cinzel font-bold text-xl text-amber-200">
+            {featureName} is a Pro Feature
+          </h3>
+          <p className="text-xs text-slate-300 leading-relaxed">
+            {featureDescription || `Unlock ${featureName}, premium map styles, HD/SVG exports, and higher AI generation limits with Pro.`}
+          </p>
+        </div>
+
+        <div className="flex flex-col gap-2 pt-2">
+          <button
+            onClick={onNavigatePricing}
+            className="w-full py-3 bg-gradient-to-r from-amber-500 to-amber-600 hover:from-amber-400 hover:to-amber-500 text-slate-950 font-bold text-xs rounded-xl shadow-lg shadow-amber-500/20 transition-all flex items-center justify-center gap-2"
+          >
+            <Sparkles className="w-4 h-4" />
+            <span>Upgrade to Pro ($9/mo)</span>
+          </button>
+
+          <button
+            onClick={onClose}
+            className="w-full py-2.5 bg-slate-900 hover:bg-slate-800 text-slate-400 hover:text-slate-200 font-semibold text-xs rounded-xl transition-colors"
+          >
+            Not Now
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+};
