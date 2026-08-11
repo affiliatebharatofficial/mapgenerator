@@ -52,7 +52,8 @@ import type {
   ContentHomepageConfig,
   SiteSettingsConfig
 } from '../../types/adminControl';
-import { SeoService } from '../../lib/seo/seoService';
+import { ImageProviderRouter, type ImageGenerationLogRecord } from '../../lib/ai/imageProviderRouter';
+import { RunwareImageProvider } from '../../lib/ai/runwareProvider';
 
 interface AdminDashboardPageProps {
   onNavigateHome: () => void;
@@ -69,6 +70,9 @@ type AdminTab =
   | 'campaigns'
   | 'ai'
   | 'ai_providers'
+  | 'ai_image_providers'
+  | 'ai_image_models'
+  | 'ai_image_logs'
   | 'ai_routing'
   | 'ai_prompts'
   | 'ai_usage'
@@ -114,6 +118,31 @@ export const AdminDashboardPage: React.FC<AdminDashboardPageProps> = ({ onNaviga
   const [emergencyControls, setEmergencyControls] = useState<EmergencyControls>(() => PlatformConfigService.getEmergencyControls());
   const [editingPromptId, setEditingPromptId] = useState<string | null>(null);
   const [editingPromptText, setEditingPromptText] = useState<string>('');
+
+  // Image Provider & Runware States
+  const [runwareKeyInput, setRunwareKeyInput] = useState('');
+  const [runwareHealth, setRunwareHealth] = useState<string>('Checking...');
+  const [imageLogs, setImageLogs] = useState<ImageGenerationLogRecord[]>(() => ImageProviderRouter.getLogs());
+
+  useEffect(() => {
+    RunwareImageProvider.testHealth().then(setRunwareHealth);
+  }, []);
+
+  const handleSaveRunwareKey = () => {
+    if (!runwareKeyInput.trim()) return;
+    RunwareImageProvider.saveApiKey(runwareKeyInput);
+    AdminPlatformService.addAuditLog('Update Runware API Key', 'Image Providers', 'Updated Runware API Key secret');
+    setRunwareKeyInput('');
+    RunwareImageProvider.testHealth().then(setRunwareHealth);
+    setAuditLogs(AdminPlatformService.getAuditLogs());
+    alert('Runware API Key saved securely!');
+  };
+
+  const handleTestRunwareHealth = async () => {
+    setRunwareHealth('Checking...');
+    const status = await RunwareImageProvider.testHealth();
+    setRunwareHealth(status);
+  };
 
   const [users, setUsers] = useState<AdminUserItem[]>([]);
   const [userSearch, setUserSearch] = useState('');
@@ -701,6 +730,116 @@ export const AdminDashboardPage: React.FC<AdminDashboardPageProps> = ({ onNaviga
                 </div>
               ))}
             </div>
+          </div>
+        )}
+        {/* RUNWARE IMAGE PROVIDERS */}
+        {activeTab === 'ai_image_providers' && (
+          <div className="glass-panel p-6 rounded-3xl border border-slate-800 space-y-6 text-xs">
+            <div className="flex justify-between items-center">
+              <h3 className="font-cinzel font-bold text-base text-amber-300">Runware Image Provider & Secret API Key Manager</h3>
+              <button
+                onClick={handleTestRunwareHealth}
+                className="px-4 py-2 bg-slate-900 hover:bg-slate-800 text-amber-300 font-bold border border-slate-700 rounded-xl"
+              >
+                Test Runware Health
+              </button>
+            </div>
+
+            <div className="p-5 bg-slate-950 rounded-2xl border border-slate-800 space-y-4">
+              <div className="flex justify-between items-center">
+                <div>
+                  <strong className="font-cinzel text-slate-100 text-sm block">Runware AI Engine</strong>
+                  <span className="text-[11px] text-slate-400 font-mono">Model: FLUX.1 [schnell] (runware:100@1)</span>
+                </div>
+                <div className="flex items-center gap-2 font-mono text-xs">
+                  <span className="text-slate-400">Health:</span>
+                  <span className={`font-bold ${runwareHealth === 'Operational' ? 'text-emerald-400' : 'text-amber-400'}`}>
+                    {runwareHealth}
+                  </span>
+                </div>
+              </div>
+
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4 font-mono text-xs pt-2">
+                <div>
+                  <label className="text-slate-400 block mb-1">Masked API Key</label>
+                  <input
+                    type="text"
+                    disabled
+                    value={RunwareImageProvider.getMaskedApiKey()}
+                    className="w-full bg-slate-900 border border-slate-800 rounded-xl p-2.5 text-slate-400 font-mono opacity-80 cursor-not-allowed"
+                  />
+                </div>
+                <div>
+                  <label className="text-slate-400 block mb-1">Update Secret API Key</label>
+                  <div className="flex gap-2">
+                    <input
+                      type="password"
+                      placeholder="Paste Runware API Key..."
+                      value={runwareKeyInput}
+                      onChange={(e) => setRunwareKeyInput(e.target.value)}
+                      className="flex-1 bg-slate-900 border border-slate-800 rounded-xl p-2.5 text-slate-100 font-mono focus:outline-none"
+                    />
+                    <button
+                      onClick={handleSaveRunwareKey}
+                      className="px-4 py-2 bg-amber-500 hover:bg-amber-400 text-slate-950 font-bold rounded-xl shadow"
+                    >
+                      Save Key
+                    </button>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* IMAGE MODELS CATALOG */}
+        {activeTab === 'ai_image_models' && (
+          <div className="glass-panel p-6 rounded-3xl border border-slate-800 space-y-6 text-xs">
+            <h3 className="font-cinzel font-bold text-base text-amber-300">Image Generation Model Catalog</h3>
+            <div className="space-y-4">
+              {ImageProviderRouter.getAllModels().map((m) => (
+                <div key={m.id} className="p-4 bg-slate-950 rounded-2xl border border-slate-800 flex justify-between items-center">
+                  <div className="space-y-1">
+                    <strong className="font-cinzel text-slate-100 text-sm block">{m.name}</strong>
+                    <span className="text-[11px] font-mono text-amber-400 block">Model ID: {m.modelId} • Provider: {m.providerId}</span>
+                    <span className="text-[10px] text-slate-400 block">Max Resolution: {m.maxResolution.width}x{m.maxResolution.height} • Credit Cost: {m.creditCost} credits</span>
+                  </div>
+                  <div className="flex items-center gap-3">
+                    <span className="px-3 py-1 bg-emerald-500/10 text-emerald-400 font-mono rounded-lg border border-emerald-500/20">
+                      Active ✓
+                    </span>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
+
+        {/* IMAGE GENERATION LOGS */}
+        {activeTab === 'ai_image_logs' && (
+          <div className="glass-panel p-6 rounded-3xl border border-slate-800 space-y-6 text-xs">
+            <h3 className="font-cinzel font-bold text-base text-amber-300">Image Generation Audit Logs</h3>
+            {imageLogs.length === 0 ? (
+              <div className="p-8 text-center text-slate-500 font-mono">No image generation requests logged yet.</div>
+            ) : (
+              <div className="space-y-3 font-mono">
+                {imageLogs.map((log) => (
+                  <div key={log.id} className="p-3 bg-slate-950 rounded-xl border border-slate-800 flex justify-between items-center text-[11px]">
+                    <div>
+                      <span className="text-amber-400 font-bold block">{log.provider} ({log.model})</span>
+                      <span className="text-slate-300 text-xs block">"{log.prompt}"</span>
+                      <span className="text-slate-500 text-[10px]">Task ID: {log.taskId} • Date: {log.timestamp.replace('T', ' ').substring(0, 19)}</span>
+                    </div>
+                    <div className="text-right">
+                      <span className={`font-bold block ${log.status === 'Completed' ? 'text-emerald-400' : 'text-rose-400'}`}>
+                        {log.status}
+                      </span>
+                      <span className="text-slate-400 text-[10px] block">Cost: ${log.providerCost.toFixed(4)} ({log.creditsCharged} credits)</span>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
           </div>
         )}
 

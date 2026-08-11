@@ -1,3 +1,4 @@
+import { ImageProviderRouter } from './imageProviderRouter';
 import type {
   VisualEntityType,
   VisualStyle,
@@ -125,15 +126,12 @@ export const VisualAssetService = {
     request: ImageGenerationRequest,
     userId = 'user_current'
   ): Promise<GeneratedImage> {
-    // 1. Simulate job processing delay
-    await new Promise((res) => setTimeout(res, 1200));
+    const res = await ImageProviderRouter.generateImage({
+      prompt: request.prompt,
+      negativePrompt: request.negativePrompt,
+      aspectRatio: request.aspectRatio
+    }, userId);
 
-    // Select suitable artwork proxy
-    const proxyCategory = request.entityType.includes('emblem') ? 'emblem' : request.entityType;
-    const pool = ARTWORK_PROXIES[proxyCategory] || ARTWORK_PROXIES.character;
-    const selectedUrl = pool[Math.floor(Math.random() * pool.length)];
-
-    // Unmark existing primary images for this entity if new generation completes
     const existing = this.getImagesForEntity(request.entityId || '');
     const isFirst = existing.length === 0;
 
@@ -143,14 +141,14 @@ export const VisualAssetService = {
       worldId: request.worldId,
       entityType: request.entityType,
       entityId: request.entityId,
-      provider: 'DALL-E 3 / Flux Pro',
-      model: 'flux-fantasy-v2',
+      provider: res.provider,
+      model: res.model,
       prompt: request.prompt,
-      storagePath: `worlds/${request.worldId || 'default'}/${request.entityType}/${Date.now()}.png`,
-      url: selectedUrl,
-      thumbnailUrl: selectedUrl,
-      width: request.aspectRatio === '16:9' ? 1200 : 800,
-      height: request.aspectRatio === '16:9' ? 675 : 800,
+      storagePath: `generated-images/user/${userId}/${request.worldId || 'general'}/${Date.now()}.webp`,
+      url: res.imageUrl,
+      thumbnailUrl: res.imageUrl,
+      width: res.width,
+      height: res.height,
       isPrimary: isFirst,
       status: 'completed',
       createdAt: new Date().toISOString()
