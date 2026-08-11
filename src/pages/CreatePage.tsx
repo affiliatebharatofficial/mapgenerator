@@ -466,6 +466,120 @@ export const CreatePage: React.FC<CreatePageProps> = ({
     [currentMap, pushState]
   );
 
+  // Canvas Tool Click Placement Handler
+  const handleCanvasClick = useCallback(
+    (pos: Position) => {
+      const { x, y } = pos;
+
+      if (activeTool === 'city') {
+        const newCity = {
+          id: `city_${Date.now().toString(36)}`,
+          name: `New Settlement`,
+          x,
+          y,
+          type: 'town' as const,
+          population: 2500
+        };
+        pushState({ ...currentMap, cities: [...currentMap.cities, newCity] });
+        setSelectedObject({ type: 'city', id: newCity.id });
+        setRightPanelTab('properties');
+      } else if (activeTool === 'location' || activeTool === 'poi_placer') {
+        const newPOI = {
+          id: `poi_${Date.now().toString(36)}`,
+          name: `Ancient Ruins`,
+          type: 'ruins' as const,
+          x,
+          y,
+          description: 'A newly discovered landmark.'
+        };
+        pushState({ ...currentMap, pointsOfInterest: [...(currentMap.pointsOfInterest || []), newPOI] });
+        setSelectedObject({ type: 'poi', id: newPOI.id });
+        setRightPanelTab('properties');
+      } else if (activeTool === 'label') {
+        const newLabel = {
+          id: `label_${Date.now().toString(36)}`,
+          text: `New Region`,
+          x,
+          y,
+          fontSize: 16,
+          rotation: 0
+        };
+        pushState({ ...currentMap, labels: [...currentMap.labels, newLabel] });
+        setSelectedObject({ type: 'label', id: newLabel.id });
+        setRightPanelTab('properties');
+      } else if (activeTool === 'mountain') {
+        pushState({ ...currentMap, mountains: [...currentMap.mountains, { x, y }] });
+      } else if (activeTool === 'forest') {
+        const newForest = {
+          id: `forest_${Date.now().toString(36)}`,
+          x,
+          y,
+          radius: 25,
+          count: 10
+        };
+        pushState({ ...currentMap, forests: [...currentMap.forests, newForest] });
+      } else if (activeTool === 'river') {
+        const rivers = currentMap.rivers || [];
+        const lastRiver = rivers[rivers.length - 1];
+        if (lastRiver && (lastRiver.points || lastRiver.path || []).length < 5) {
+          const updatedRivers = rivers.map((r, i) =>
+            i === rivers.length - 1
+              ? { ...r, points: [...(r.points || r.path || []), { x, y }] }
+              : r
+          );
+          pushState({ ...currentMap, rivers: updatedRivers });
+        } else {
+          const newRiver = {
+            id: `river_${Date.now().toString(36)}`,
+            name: `New River`,
+            points: [{ x, y }],
+            width: 4
+          };
+          pushState({ ...currentMap, rivers: [...rivers, newRiver] });
+        }
+      } else if (activeTool === 'road') {
+        const roads = currentMap.roads || [];
+        const lastRoad = roads[roads.length - 1];
+        if (lastRoad && (lastRoad.points || lastRoad.path || []).length < 5) {
+          const updatedRoads = roads.map((rd, i) =>
+            i === roads.length - 1
+              ? { ...rd, points: [...(rd.points || rd.path || []), { x, y }] }
+              : rd
+          );
+          pushState({ ...currentMap, roads: updatedRoads });
+        } else {
+          const newRoad = {
+            id: `road_${Date.now().toString(36)}`,
+            name: `New Road`,
+            points: [{ x, y }],
+            width: 2
+          };
+          pushState({ ...currentMap, roads: [...roads, newRoad] });
+        }
+      } else if (activeTool === 'eraser') {
+        const city = currentMap.cities.find((c) => Math.hypot(c.x - x, c.y - y) < 20);
+        if (city) {
+          pushState({ ...currentMap, cities: currentMap.cities.filter((c) => c.id !== city.id) });
+          setSelectedObject(null);
+          return;
+        }
+        const poi = currentMap.pointsOfInterest?.find((p) => Math.hypot(p.x - x, p.y - y) < 20);
+        if (poi) {
+          pushState({ ...currentMap, pointsOfInterest: currentMap.pointsOfInterest.filter((p) => p.id !== poi.id) });
+          setSelectedObject(null);
+          return;
+        }
+        const label = currentMap.labels.find((l) => Math.hypot(l.x - x, l.y - y) < 25);
+        if (label) {
+          pushState({ ...currentMap, labels: currentMap.labels.filter((l) => l.id !== label.id) });
+          setSelectedObject(null);
+          return;
+        }
+      }
+    },
+    [activeTool, currentMap, pushState]
+  );
+
   // Property Inspector Updates
   const handleUpdateCity = useCallback(
     (id: string, updates: Partial<{ name: string; type: any; population: number }>) => {
@@ -633,6 +747,7 @@ export const CreatePage: React.FC<CreatePageProps> = ({
             }}
             onUpdateObjectPosition={handleUpdateObjectPosition}
             onPaintTerrainCell={handlePaintTerrainCell}
+            onCanvasClick={handleCanvasClick}
             onContextMenuAction={(e, obj) => setContextMenuPos({ x: e.clientX, y: e.clientY, obj })}
             transform={transformHook.transform}
             onZoomIn={transformHook.zoomIn}

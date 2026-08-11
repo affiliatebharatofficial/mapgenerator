@@ -21,6 +21,7 @@ interface MapCanvasProps {
   onSelectObject: (obj: SelectedObjectRef | null) => void;
   onUpdateObjectPosition: (type: string, id: string, pos: Position) => void;
   onPaintTerrainCell?: (x: number, y: number, type: TerrainBrushType) => void;
+  onCanvasClick?: (coords: Position) => void;
   onAddPointToRiver?: (x: number, y: number) => void;
   onContextMenuAction?: (e: React.MouseEvent, obj: SelectedObjectRef) => void;
   transform: { x: number; y: number; k: number };
@@ -47,6 +48,7 @@ export const MapCanvas: React.FC<MapCanvasProps> = ({
   onSelectObject,
   onUpdateObjectPosition,
   onPaintTerrainCell,
+  onCanvasClick,
   onContextMenuAction,
   transform,
   onMouseDown,
@@ -69,6 +71,7 @@ export const MapCanvas: React.FC<MapCanvasProps> = ({
   const isDark = map.style === 'dark-fantasy' || cartographyTheme?.id === 'dark-fantasy';
 
   const [draggingObj, setDraggingObj] = useState<{ type: string; id: string } | null>(null);
+  const [isMouseDown, setIsMouseDown] = useState(false);
 
   // SVG coordinate transformation helper
   const getSVGCoordinates = (e: React.MouseEvent<SVGSVGElement>): Position => {
@@ -84,15 +87,25 @@ export const MapCanvas: React.FC<MapCanvasProps> = ({
   };
 
   const handleCanvasMouseDown = (e: React.MouseEvent<SVGSVGElement>) => {
+    setIsMouseDown(true);
+    const coords = getSVGCoordinates(e);
     if (activeTool === 'terrain_brush' && onPaintTerrainCell) {
-      const coords = getSVGCoordinates(e);
       onPaintTerrainCell(coords.x, coords.y, activeTerrainBrush);
+      return;
+    }
+    if (activeTool !== 'select' && activeTool !== 'pan' && onCanvasClick) {
+      onCanvasClick(coords);
       return;
     }
     onMouseDown(e);
   };
 
   const handleCanvasMouseMove = (e: React.MouseEvent<SVGSVGElement>) => {
+    if (isMouseDown && activeTool === 'terrain_brush' && onPaintTerrainCell) {
+      const coords = getSVGCoordinates(e);
+      onPaintTerrainCell(coords.x, coords.y, activeTerrainBrush);
+      return;
+    }
     if (draggingObj) {
       const coords = getSVGCoordinates(e);
       onUpdateObjectPosition(draggingObj.type, draggingObj.id, coords);
@@ -102,6 +115,7 @@ export const MapCanvas: React.FC<MapCanvasProps> = ({
   };
 
   const handleCanvasMouseUp = (e: React.MouseEvent<SVGSVGElement>) => {
+    setIsMouseDown(false);
     setDraggingObj(null);
     onMouseUp(e);
   };
@@ -269,6 +283,50 @@ export const MapCanvas: React.FC<MapCanvasProps> = ({
                     fontFamily={styleConfig.fontFamily}
                   >
                     {c.name}
+                  </text>
+                </g>
+              );
+            })}
+
+          {/* 9b. Points of Interest (POIs) */}
+          {layers.locations !== false &&
+            map.pointsOfInterest?.map((p) => {
+              const isSelected = selectedObject?.type === 'poi' && selectedObject.id === p.id;
+              return (
+                <g
+                  key={p.id}
+                  transform={`translate(${p.x}, ${p.y})`}
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    onSelectObject({ type: 'poi', id: p.id });
+                  }}
+                  onMouseDown={(e) => {
+                    e.stopPropagation();
+                    setDraggingObj({ type: 'poi', id: p.id });
+                  }}
+                  onContextMenu={(e) => {
+                    e.preventDefault();
+                    if (onContextMenuAction) onContextMenuAction(e, { type: 'poi', id: p.id });
+                  }}
+                  className="cursor-pointer group"
+                >
+                  <path
+                    d="M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7zm0 9.5c-1.38 0-2.5-1.12-2.5-2.5s1.12-2.5 2.5-2.5 2.5 1.12 2.5 2.5-1.12 2.5-2.5 2.5z"
+                    fill="#38bdf8"
+                    stroke="#0b0d11"
+                    strokeWidth={1.5}
+                    transform="translate(-12, -22) scale(0.9)"
+                  />
+                  {isSelected && !isPreviewMode && <circle r={16} fill="none" stroke="#38bdf8" strokeWidth={2} strokeDasharray="3,3" />}
+                  <text
+                    y={14}
+                    textAnchor="middle"
+                    fill={styleConfig.textColor}
+                    fontSize={10}
+                    fontWeight="bold"
+                    fontFamily={styleConfig.fontFamily}
+                  >
+                    {p.name}
                   </text>
                 </g>
               );
