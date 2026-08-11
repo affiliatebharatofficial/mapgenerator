@@ -673,21 +673,52 @@ export const AdminDashboardPage: React.FC<AdminDashboardPageProps> = ({ onNaviga
             ) : (
               <div className="space-y-2">
                 {filteredUsers.map((u) => (
-                  <div key={u.id} className="glass-panel p-4 rounded-2xl border border-slate-800 flex items-center justify-between gap-4">
-                    <div className="space-y-0.5">
-                      <div className="flex items-center gap-2">
+                  <div key={u.id} className="glass-panel p-4 rounded-2xl border border-slate-800 flex items-center justify-between gap-4 flex-wrap">
+                    <div className="space-y-0.5 min-w-[280px]">
+                      <div className="flex items-center gap-2 flex-wrap">
                         <strong className="font-cinzel text-slate-100">{u.displayName} ({u.email})</strong>
-                        <span className="text-[10px] font-mono uppercase bg-amber-500/10 text-amber-300 px-2 py-0.5 rounded">
-                          {u.plan} Plan • {u.credits} Credits
+                        <span className={`text-[10px] font-mono uppercase px-2 py-0.5 rounded font-bold border ${
+                          u.plan.toLowerCase().includes('pro') || u.plan.toLowerCase().includes('guild') ? 'bg-amber-500/20 text-amber-300 border-amber-500/40' :
+                          u.plan.toLowerCase().includes('creator') ? 'bg-sky-500/20 text-sky-300 border-sky-500/40' : 'bg-slate-800 text-slate-300 border-slate-700'
+                        }`}>
+                          {u.plan} Tier • {u.credits} Credits
                         </span>
                       </div>
                       <span className="text-[10px] font-mono text-slate-400 block">Joined: {u.joinedAt} • Worlds: {u.worldsCount} • Maps: {u.mapsCount}</span>
                     </div>
 
-                    <div className="flex items-center gap-2">
+                    <div className="flex items-center gap-2 flex-wrap">
+                      <div className="flex items-center gap-1.5 bg-slate-950 p-1 rounded-xl border border-slate-800">
+                        <select
+                          id={`plan_select_${u.id}`}
+                          defaultValue={u.plan.toLowerCase()}
+                          className="bg-slate-900 border border-slate-800 rounded-lg px-2 py-1 text-slate-200 font-mono text-[11px] focus:outline-none focus:border-amber-500"
+                        >
+                          {plansList.map((p) => (
+                            <option key={p.id} value={p.id}>
+                              {p.name} (${p.priceMonthly}/mo)
+                            </option>
+                          ))}
+                        </select>
+                        <button
+                          onClick={async () => {
+                            const selectEl = document.getElementById(`plan_select_${u.id}`) as HTMLSelectElement;
+                            const targetPlanId = selectEl ? selectEl.value : 'pro';
+                            await AdminPlatformService.setUserPlan(u.id, u.email, targetPlanId, 'affiliatebharatofficial@gmail.com');
+                            const updatedUsers = await AdminPlatformService.fetchUsers();
+                            setUsers(updatedUsers);
+                            setAuditLogs(AdminPlatformService.getAuditLogs());
+                            alert(`Successfully granted "${targetPlanId.toUpperCase()}" plan to ${u.displayName || u.email}!`);
+                          }}
+                          className="px-3 py-1 bg-amber-500 hover:bg-amber-400 text-slate-950 font-bold text-[11px] rounded-lg shadow transition-all"
+                        >
+                          Grant Plan 👑
+                        </button>
+                      </div>
+
                       <button
                         onClick={() => setCreditModalUser(u)}
-                        className="px-3 py-1.5 bg-amber-500 text-slate-950 font-bold text-xs rounded-xl shadow"
+                        className="px-3 py-1.5 bg-slate-800 hover:bg-slate-700 text-slate-200 font-bold text-xs rounded-xl border border-slate-700"
                       >
                         Adjust Credits
                       </button>

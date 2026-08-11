@@ -147,22 +147,46 @@ export const AdminPlatformService = {
       const { data: profiles } = await supabase.from('profiles').select('*');
       if (!profiles || profiles.length === 0) return [];
 
-      return profiles.map((p) => ({
-        id: p.id,
-        email: p.username ? `${p.username}@user.com` : 'user@createfantasymap.com',
-        displayName: p.display_name || p.username || 'User',
-        plan: 'Free',
-        credits: 5,
-        worldsCount: 0,
-        mapsCount: 0,
-        campaignsCount: 0,
-        isSuspended: false,
-        joinedAt: p.created_at ? p.created_at.substring(0, 10) : '2026-01-01',
-        lastActive: 'Today'
-      }));
+      return profiles.map((p) => {
+        const savedPlan = localStorage.getItem(`createfantasymap_user_plan_${p.id}`) || p.plan || 'free';
+        const savedCredits = localStorage.getItem(`createfantasymap_credits_${p.id}`);
+        return {
+          id: p.id,
+          email: p.email || (p.username ? `${p.username}@user.com` : 'user@createfantasymap.com'),
+          displayName: p.display_name || p.username || 'User',
+          plan: savedPlan,
+          credits: savedCredits ? parseInt(savedCredits, 10) : (p.credits || 50),
+          worldsCount: 0,
+          mapsCount: 0,
+          campaignsCount: 0,
+          isSuspended: false,
+          joinedAt: p.created_at ? p.created_at.substring(0, 10) : '2026-01-01',
+          lastActive: 'Today'
+        };
+      });
     } catch {
       return [];
     }
+  },
+
+  async setUserPlan(userId: string, userEmail: string, targetPlanId: string, adminUser: string = 'affiliatebharatofficial@gmail.com') {
+    localStorage.setItem(`createfantasymap_user_plan_${userId}`, targetPlanId);
+    if (isSupabaseConfigured) {
+      try {
+        await supabase.from('profiles').update({ plan: targetPlanId }).eq('id', userId);
+      } catch {
+        // ignore if column absent
+      }
+    }
+    // Update mock billing provider
+    try {
+      const { setMockUserPlan } = await import('../billing/billingProvider');
+      setMockUserPlan(userId, targetPlanId as any);
+    } catch {
+      // fallback
+    }
+
+    this.addAuditLog('Admin Grant Subscription Plan', userEmail, `Granted "${targetPlanId.toUpperCase()}" plan by Admin (${adminUser})`);
   },
 
   async adjustUserCredits(userId: string, userEmail: string, amount: number, reason: string) {
