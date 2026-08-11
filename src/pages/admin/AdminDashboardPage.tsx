@@ -1037,6 +1037,139 @@ export const AdminDashboardPage: React.FC<AdminDashboardPageProps> = ({ onNaviga
           </div>
         )}
 
+        {/* CREDIT LEDGER MANAGEMENT */}
+        {activeTab === 'credits' && (
+          <div className="glass-panel p-6 rounded-3xl border border-slate-800 space-y-6 text-xs">
+            <div className="flex justify-between items-center">
+              <h3 className="font-cinzel font-bold text-base text-amber-300">Credit Engine Ledger & Cost Matrix Catalog</h3>
+              <button
+                onClick={handleSaveCreditCosts}
+                className="px-5 py-2 bg-amber-500 hover:bg-amber-400 text-slate-950 font-bold rounded-xl shadow"
+              >
+                Save Credit Cost Matrix
+              </button>
+            </div>
+
+            <div className="space-y-4">
+              <h4 className="font-cinzel font-bold text-slate-200">Dynamic Feature Credit Costs</h4>
+              <div className="space-y-3 font-mono">
+                {creditCosts.map((c, idx) => (
+                  <div key={c.key} className="p-3 bg-slate-950 rounded-xl border border-slate-800 flex justify-between items-center">
+                    <div>
+                      <strong className="text-slate-100 block">{c.name}</strong>
+                      <span className="text-[10px] text-slate-500">Key: {c.key} • Plans: {c.allowedPlans.join(', ')}</span>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <span className="text-slate-400">Cost:</span>
+                      <input
+                        type="number"
+                        value={c.creditCost}
+                        onChange={(e) => {
+                          const updated = [...creditCosts];
+                          updated[idx].creditCost = parseInt(e.target.value) || 0;
+                          setCreditCosts(updated);
+                        }}
+                        className="w-20 bg-slate-900 border border-slate-700 text-amber-400 font-bold rounded-lg p-1.5 text-center focus:outline-none"
+                      />
+                      <span className="text-slate-400">credits</span>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+
+            <div className="pt-4 border-t border-slate-800 space-y-4">
+              <h4 className="font-cinzel font-bold text-slate-200">Manual Credit Adjustment Form</h4>
+              <div className="p-4 bg-slate-950 rounded-2xl border border-slate-800 space-y-3">
+                <div>
+                  <label className="text-slate-400 block mb-1">Target User Email</label>
+                  <select
+                    onChange={(e) => {
+                      const u = users.find((usr) => usr.email === e.target.value);
+                      if (u) setCreditModalUser(u);
+                    }}
+                    className="w-full bg-slate-900 border border-slate-800 rounded-xl p-2.5 text-slate-100 font-mono"
+                  >
+                    <option value="">Select registered user...</option>
+                    {users.map((u) => (
+                      <option key={u.id} value={u.email}>
+                        {u.displayName || u.email} ({u.credits} credits)
+                      </option>
+                    ))}
+                  </select>
+                </div>
+
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div>
+                    <label className="text-slate-400 block mb-1">Credit Delta Amount (+ / -)</label>
+                    <input
+                      type="number"
+                      value={creditAmount}
+                      onChange={(e) => setCreditAmount(parseInt(e.target.value) || 0)}
+                      className="w-full bg-slate-900 border border-slate-800 rounded-xl p-2.5 text-slate-100 font-mono"
+                    />
+                  </div>
+                  <div>
+                    <label className="text-slate-400 block mb-1">Reason for Adjustment</label>
+                    <input
+                      type="text"
+                      value={creditReason}
+                      onChange={(e) => setCreditReason(e.target.value)}
+                      placeholder="Promotional Bonus / Refund / Support"
+                      className="w-full bg-slate-900 border border-slate-800 rounded-xl p-2.5 text-slate-100 font-mono"
+                    />
+                  </div>
+                </div>
+
+                <button
+                  onClick={async () => {
+                    if (!creditModalUser) {
+                      alert('Please select a target user!');
+                      return;
+                    }
+                    await AdminPlatformService.adjustUserCredits(creditModalUser.id, creditModalUser.email, creditAmount, creditReason);
+                    setAuditLogs(AdminPlatformService.getAuditLogs());
+                    const updatedUsers = await AdminPlatformService.fetchUsers();
+                    setUsers(updatedUsers);
+                    setCreditModalUser(null);
+                    alert(`Successfully adjusted ${creditAmount} credits for ${creditModalUser.email}`);
+                  }}
+                  className="px-5 py-2.5 bg-amber-500 hover:bg-amber-400 text-slate-950 font-bold rounded-xl shadow"
+                >
+                  Confirm Credit Adjustment
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* SUBSCRIPTIONS & PLANS MANAGEMENT */}
+        {(activeTab === 'subscriptions' || activeTab === 'plans') && (
+          <div className="glass-panel p-6 rounded-3xl border border-slate-800 space-y-6 text-xs">
+            <h3 className="font-cinzel font-bold text-base text-amber-300">Subscription Plans & Tiers Matrix</h3>
+
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+              {[
+                { name: 'Free Adventurer', price: '$0/mo', credits: '50 free signup credits', worlds: '1 World', maps: '3 Saved Maps', ai: 'Basic AI Naming', exports: 'PNG Standard' },
+                { name: 'World Creator', price: '$12/mo', credits: '500 credits / month', worlds: '10 Worlds', maps: 'Unlimited Maps', ai: 'World Bible & Lore AI', exports: 'PNG & SVG Vector' },
+                { name: 'Master Guildmaster (Pro)', price: '$29/mo', credits: '2,000 credits / month', worlds: 'Unlimited Worlds', maps: 'Unlimited Maps', ai: 'FLUX.1 Schnell & AI Campaign Engine', exports: 'HD PDF Worldbook & SVG' }
+              ].map((tier) => (
+                <div key={tier.name} className="p-5 bg-slate-950 rounded-2xl border border-slate-800 space-y-3">
+                  <strong className="font-cinzel text-amber-400 text-sm block">{tier.name}</strong>
+                  <span className="text-xl font-bold font-mono text-slate-100 block">{tier.price}</span>
+                  <div className="space-y-1 text-slate-400 font-mono text-[11px] pt-2 border-t border-slate-900">
+                    <p>• {tier.credits}</p>
+                    <p>• {tier.worlds}</p>
+                    <p>• {tier.maps}</p>
+                    <p>• {tier.ai}</p>
+                    <p>• {tier.exports}</p>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
+
         {/* 6. FEATURE FLAGS */}
         {activeTab === 'features' && (
           <div className="glass-panel p-6 rounded-3xl border border-slate-800 space-y-6 text-xs">
