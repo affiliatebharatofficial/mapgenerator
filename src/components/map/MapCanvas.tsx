@@ -230,20 +230,62 @@ export const MapCanvas: React.FC<MapCanvasProps> = ({
 
           {/* 7. Mountains */}
           {layers.mountains &&
-            map.mountains.map((m, idx) => (
-              <g key={idx} transform={`translate(${m.x}, ${m.y})`}>
-                <polygon points="0,-18 -14,14 14,14" fill={styleConfig.mountainColor} stroke={styleConfig.textColor} strokeWidth={1.5} />
-                <polygon points="0,-18 -6,0 0,-2" fill={isDark ? '#e2e8f0' : '#ffffff'} opacity={0.8} />
-              </g>
-            ))}
+            map.mountains.map((m: any, idx) => {
+              const mId = m.id || `m_${idx}`;
+              const isSelected = selectedObject?.type === 'mountain' && selectedObject.id === mId;
+              return (
+                <g
+                  key={mId}
+                  transform={`translate(${m.x}, ${m.y})`}
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    onSelectObject({ type: 'mountain', id: mId });
+                  }}
+                  onMouseDown={(e) => {
+                    e.stopPropagation();
+                    setDraggingObj({ type: 'mountain', id: mId });
+                  }}
+                  onContextMenu={(e) => {
+                    e.preventDefault();
+                    if (onContextMenuAction) onContextMenuAction(e, { type: 'mountain', id: mId });
+                  }}
+                  className="cursor-pointer group"
+                >
+                  <polygon points="0,-18 -14,14 14,14" fill={styleConfig.mountainColor} stroke={styleConfig.textColor} strokeWidth={1.5} />
+                  <polygon points="0,-18 -6,0 0,-2" fill={isDark ? '#e2e8f0' : '#ffffff'} opacity={0.8} />
+                  {isSelected && !isPreviewMode && <circle r={20} fill="none" stroke="#38bdf8" strokeWidth={2} strokeDasharray="3,3" />}
+                </g>
+              );
+            })}
 
           {/* 8. Forests */}
           {layers.forests &&
-            map.forests.map((f, idx) => (
-              <g key={idx} transform={`translate(${f.x}, ${f.y})`}>
-                <circle r={f.radius} fill={styleConfig.forestColor} opacity={0.6} />
-              </g>
-            ))}
+            map.forests.map((f: any, idx) => {
+              const fId = f.id || `f_${idx}`;
+              const isSelected = selectedObject?.type === 'forest' && selectedObject.id === fId;
+              return (
+                <g
+                  key={fId}
+                  transform={`translate(${f.x}, ${f.y})`}
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    onSelectObject({ type: 'forest', id: fId });
+                  }}
+                  onMouseDown={(e) => {
+                    e.stopPropagation();
+                    setDraggingObj({ type: 'forest', id: fId });
+                  }}
+                  onContextMenu={(e) => {
+                    e.preventDefault();
+                    if (onContextMenuAction) onContextMenuAction(e, { type: 'forest', id: fId });
+                  }}
+                  className="cursor-pointer group"
+                >
+                  <circle r={f.radius || 20} fill={styleConfig.forestColor} opacity={0.6} />
+                  {isSelected && !isPreviewMode && <circle r={(f.radius || 20) + 4} fill="none" stroke="#38bdf8" strokeWidth={2} strokeDasharray="3,3" />}
+                </g>
+              );
+            })}
 
           {/* 9. Cities / Settlements */}
           {layers.cities &&

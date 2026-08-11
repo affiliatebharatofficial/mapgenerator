@@ -283,8 +283,14 @@ export const CreatePage: React.FC<CreatePageProps> = ({
       const labels = currentMap.labels.filter((l) => l.id !== id);
       pushState({ ...currentMap, labels });
     } else if (type === 'poi') {
-      const pointsOfInterest = currentMap.pointsOfInterest.filter((p) => p.id !== id);
+      const pointsOfInterest = (currentMap.pointsOfInterest || []).filter((p) => p.id !== id);
       pushState({ ...currentMap, pointsOfInterest });
+    } else if (type === 'mountain') {
+      const mountains = currentMap.mountains.filter((m: any, idx) => (m.id || `m_${idx}`) !== id);
+      pushState({ ...currentMap, mountains });
+    } else if (type === 'forest') {
+      const forests = currentMap.forests.filter((f: any, idx) => (f.id || `f_${idx}`) !== id);
+      pushState({ ...currentMap, forests });
     }
 
     setSelectedObject(null);
@@ -449,8 +455,14 @@ export const CreatePage: React.FC<CreatePageProps> = ({
         const updatedLabels = currentMap.labels.map((l) => (l.id === id ? { ...l, x: pos.x, y: pos.y } : l));
         pushState({ ...currentMap, labels: updatedLabels, updatedAt: new Date().toISOString() });
       } else if (type === 'poi') {
-        const updatedPOIs = currentMap.pointsOfInterest.map((p) => (p.id === id ? { ...p, x: pos.x, y: pos.y } : p));
+        const updatedPOIs = (currentMap.pointsOfInterest || []).map((p) => (p.id === id ? { ...p, x: pos.x, y: pos.y } : p));
         pushState({ ...currentMap, pointsOfInterest: updatedPOIs, updatedAt: new Date().toISOString() });
+      } else if (type === 'mountain') {
+        const updatedMountains = currentMap.mountains.map((m: any, idx) => ((m.id || `m_${idx}`) === id ? { ...m, x: pos.x, y: pos.y } : m));
+        pushState({ ...currentMap, mountains: updatedMountains, updatedAt: new Date().toISOString() });
+      } else if (type === 'forest') {
+        const updatedForests = currentMap.forests.map((f: any, idx) => ((f.id || `f_${idx}`) === id ? { ...f, x: pos.x, y: pos.y } : f));
+        pushState({ ...currentMap, forests: updatedForests, updatedAt: new Date().toISOString() });
       }
     },
     [currentMap, pushState]
@@ -572,6 +584,18 @@ export const CreatePage: React.FC<CreatePageProps> = ({
         const label = currentMap.labels.find((l) => Math.hypot(l.x - x, l.y - y) < 25);
         if (label) {
           pushState({ ...currentMap, labels: currentMap.labels.filter((l) => l.id !== label.id) });
+          setSelectedObject(null);
+          return;
+        }
+        const mountainIdx = currentMap.mountains.findIndex((m) => Math.hypot(m.x - x, m.y - y) < 25);
+        if (mountainIdx !== -1) {
+          pushState({ ...currentMap, mountains: currentMap.mountains.filter((_, i) => i !== mountainIdx) });
+          setSelectedObject(null);
+          return;
+        }
+        const forestIdx = currentMap.forests.findIndex((f: any) => Math.hypot(f.x - x, f.y - y) < Math.max(20, f.radius || 20));
+        if (forestIdx !== -1) {
+          pushState({ ...currentMap, forests: currentMap.forests.filter((_, i) => i !== forestIdx) });
           setSelectedObject(null);
           return;
         }

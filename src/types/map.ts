@@ -203,7 +203,7 @@ export interface GeneratorConfig {
 }
 
 export interface SelectedObjectRef {
-  type: 'city' | 'kingdom' | 'label' | 'poi' | 'river' | 'road' | 'region' | 'kingdom_border' | 'gm_note' | 'custom_marker' | 'user_artwork';
+  type: 'city' | 'kingdom' | 'label' | 'poi' | 'river' | 'road' | 'region' | 'kingdom_border' | 'gm_note' | 'custom_marker' | 'user_artwork' | 'mountain' | 'forest';
   id: string;
 }
 

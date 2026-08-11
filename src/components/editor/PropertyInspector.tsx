@@ -1,5 +1,5 @@
 import React from 'react';
-import { Tag, Building, Globe, Trash2, Sliders, MapPin, Crown, Compass, Sparkles } from 'lucide-react';
+import { Tag, Building, Globe, Trash2, Sliders, MapPin, Crown, Compass, Sparkles, Mountain, Trees } from 'lucide-react';
 import type { FantasyMap, SelectedObjectRef } from '../../types/map';
 import { PlatformConfigService } from '../../lib/config/platformConfigService';
 
@@ -31,7 +31,7 @@ export const PropertyInspector: React.FC<PropertyInspectorProps> = ({
       <div className="p-6 text-center text-xs text-slate-500 font-sans space-y-2">
         <Sliders className="w-8 h-8 mx-auto text-slate-600" />
         <p className="font-semibold text-slate-400">No Object Selected</p>
-        <p className="text-[11px] leading-relaxed">Click any settlement, kingdom, POI, label, river, or road on the map to inspect properties.</p>
+        <p className="text-[11px] leading-relaxed">Click any settlement, kingdom, POI, label, mountain, or forest on the map to inspect properties.</p>
       </div>
     );
   }
@@ -264,6 +264,56 @@ export const PropertyInspector: React.FC<PropertyInspectorProps> = ({
             className="w-full bg-slate-950 border border-slate-800 rounded-xl p-2.5 text-xs text-slate-200"
           />
         </div>
+      </div>
+    );
+  }
+
+  if (type === 'mountain') {
+    return (
+      <div className="space-y-4 font-sans text-xs">
+        <div className="flex justify-between items-start pb-2 border-b border-slate-800">
+          <div className="flex items-center gap-1.5">
+            <Mountain className="w-4 h-4 text-amber-400" />
+            <h4 className="font-cinzel font-bold text-sm text-slate-100">Mountain Peak</h4>
+          </div>
+          <button onClick={onDeleteSelected} className="p-1 text-rose-400 hover:text-rose-300 flex items-center gap-1 text-[11px] font-semibold bg-rose-500/10 px-2 py-1 rounded-lg border border-rose-500/20">
+            <Trash2 className="w-3.5 h-3.5" /> Delete Peak
+          </button>
+        </div>
+        <p className="text-slate-400 leading-relaxed">
+          Mountain peak selected. You can drag it to move across the terrain or click <strong>Delete Peak</strong> to remove it from the map.
+        </p>
+        <button
+          onClick={onDeleteSelected}
+          className="w-full py-2.5 bg-rose-500/20 hover:bg-rose-500/30 text-rose-300 font-bold text-xs rounded-xl border border-rose-500/40 flex items-center justify-center gap-1.5"
+        >
+          <Trash2 className="w-4 h-4" /> Delete Mountain Peak
+        </button>
+      </div>
+    );
+  }
+
+  if (type === 'forest') {
+    return (
+      <div className="space-y-4 font-sans text-xs">
+        <div className="flex justify-between items-start pb-2 border-b border-slate-800">
+          <div className="flex items-center gap-1.5">
+            <Trees className="w-4 h-4 text-emerald-400" />
+            <h4 className="font-cinzel font-bold text-sm text-slate-100">Forest Cluster</h4>
+          </div>
+          <button onClick={onDeleteSelected} className="p-1 text-rose-400 hover:text-rose-300 flex items-center gap-1 text-[11px] font-semibold bg-rose-500/10 px-2 py-1 rounded-lg border border-rose-500/20">
+            <Trash2 className="w-3.5 h-3.5" /> Delete Cluster
+          </button>
+        </div>
+        <p className="text-slate-400 leading-relaxed">
+          Forest cluster selected. You can drag it to move across the terrain or click <strong>Delete Cluster</strong> to remove it from the map.
+        </p>
+        <button
+          onClick={onDeleteSelected}
+          className="w-full py-2.5 bg-rose-500/20 hover:bg-rose-500/30 text-rose-300 font-bold text-xs rounded-xl border border-rose-500/40 flex items-center justify-center gap-1.5"
+        >
+          <Trash2 className="w-4 h-4" /> Delete Forest Cluster
+        </button>
       </div>
     );
   }
