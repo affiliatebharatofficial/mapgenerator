@@ -2,10 +2,28 @@ import { AdminPlatformService } from '../admin/adminPlatformService';
 import { MAP_STYLES, type MapThemeStyle } from '../map-engine/styles';
 import type { MapStyle } from '../../types/map';
 
+export interface SubscriptionPlanItem {
+  id: string;
+  name: string;
+  slug: string;
+  priceMonthly: number;
+  priceAnnual: number;
+  creditsPerMonth: number;
+  maxSavedMaps: number;
+  maxSavedWorlds: number;
+  allowedStyles: string[];
+  exportFormats: ('png' | 'svg' | 'pdf')[];
+  maxResolution: 'standard' | 'hd' | 'ultra_hd';
+  commercialUse: boolean;
+  enabled: boolean;
+  isPopular?: boolean;
+}
+
 const CONFIG_CREDIT_COSTS_KEY = 'createfantasymap_config_credit_costs';
 const CONFIG_MAP_PROCEDURAL_KEY = 'createfantasymap_config_map_procedural';
 const CONFIG_AI_PROMPTS_KEY = 'createfantasymap_config_ai_prompts';
 const CONFIG_EMERGENCY_KEY = 'createfantasymap_config_emergency';
+const CONFIG_SUBSCRIPTION_PLANS_KEY = 'createfantasymap_config_subscription_plans';
 
 export interface CreditCostCatalogItem {
   key: string;
@@ -206,5 +224,83 @@ export const PlatformConfigService = {
   saveEmergencyControls(controls: EmergencyControls) {
     localStorage.setItem(CONFIG_EMERGENCY_KEY, JSON.stringify(controls));
     AdminPlatformService.addAuditLog('Emergency Control Update', 'System Safety', `Emergency Status: ${JSON.stringify(controls)}`);
+  },
+
+  // ----------------------------------------------------
+  // 6. DYNAMIC SUBSCRIPTION PLANS (ADD / EDIT / REMOVE)
+  // ----------------------------------------------------
+  getSubscriptionPlans(): SubscriptionPlanItem[] {
+    const data = localStorage.getItem(CONFIG_SUBSCRIPTION_PLANS_KEY);
+    if (data) return JSON.parse(data);
+    return [
+      {
+        id: 'free',
+        name: 'Free Adventurer',
+        slug: 'free',
+        priceMonthly: 0,
+        priceAnnual: 0,
+        creditsPerMonth: 50,
+        maxSavedMaps: 3,
+        maxSavedWorlds: 1,
+        allowedStyles: ['parchment', 'clean'],
+        exportFormats: ['png'],
+        maxResolution: 'standard',
+        commercialUse: false,
+        enabled: true
+      },
+      {
+        id: 'creator',
+        name: 'World Creator',
+        slug: 'creator',
+        priceMonthly: 12,
+        priceAnnual: 9,
+        creditsPerMonth: 500,
+        maxSavedMaps: 50,
+        maxSavedWorlds: 10,
+        allowedStyles: ['parchment', 'clean', 'dark-fantasy', 'hand-drawn'],
+        exportFormats: ['png', 'svg'],
+        maxResolution: 'hd',
+        commercialUse: false,
+        enabled: true,
+        isPopular: true
+      },
+      {
+        id: 'pro',
+        name: 'Master Guildmaster (Pro)',
+        slug: 'pro',
+        priceMonthly: 29,
+        priceAnnual: 22,
+        creditsPerMonth: 2000,
+        maxSavedMaps: 999,
+        maxSavedWorlds: 999,
+        allowedStyles: ['parchment', 'clean', 'dark-fantasy', 'hand-drawn', 'rpg'],
+        exportFormats: ['png', 'svg', 'pdf'],
+        maxResolution: 'ultra_hd',
+        commercialUse: true,
+        enabled: true
+      }
+    ];
+  },
+
+  saveSubscriptionPlans(plans: SubscriptionPlanItem[]) {
+    localStorage.setItem(CONFIG_SUBSCRIPTION_PLANS_KEY, JSON.stringify(plans));
+    AdminPlatformService.addAuditLog('Update Subscription Plans', 'Monetization Engine', 'Saved Subscription Plans Catalog');
+  },
+
+  addOrUpdatePlan(plan: SubscriptionPlanItem) {
+    const plans = this.getSubscriptionPlans();
+    const idx = plans.findIndex((p) => p.id === plan.id);
+    if (idx >= 0) {
+      plans[idx] = plan;
+    } else {
+      plans.push(plan);
+    }
+    this.saveSubscriptionPlans(plans);
+  },
+
+  deletePlan(planId: string) {
+    let plans = this.getSubscriptionPlans();
+    plans = plans.filter((p) => p.id !== planId);
+    this.saveSubscriptionPlans(plans);
   }
 };

@@ -39,7 +39,7 @@ import {
   BarChart3
 } from 'lucide-react';
 import { AdminPlatformService } from '../../lib/admin/adminPlatformService';
-import { PlatformConfigService, type CreditCostCatalogItem, type MapProceduralConfig, type AIPromptTemplate, type EmergencyControls } from '../../lib/config/platformConfigService';
+import { PlatformConfigService, type CreditCostCatalogItem, type MapProceduralConfig, type AIPromptTemplate, type EmergencyControls, type SubscriptionPlanItem } from '../../lib/config/platformConfigService';
 import type {
   AdminSystemMetrics,
   SystemHealthStatus,
@@ -119,6 +119,28 @@ export const AdminDashboardPage: React.FC<AdminDashboardPageProps> = ({ onNaviga
   const [emergencyControls, setEmergencyControls] = useState<EmergencyControls>(() => PlatformConfigService.getEmergencyControls());
   const [editingPromptId, setEditingPromptId] = useState<string | null>(null);
   const [editingPromptText, setEditingPromptText] = useState<string>('');
+  // Subscription Plans Dynamic States
+  const [plansList, setPlansList] = useState<SubscriptionPlanItem[]>(() => PlatformConfigService.getSubscriptionPlans());
+  const [editingPlan, setEditingPlan] = useState<SubscriptionPlanItem | null>(null);
+  const [isAddingNewPlan, setIsAddingNewPlan] = useState<boolean>(false);
+
+  const handleSavePlan = (plan: SubscriptionPlanItem) => {
+    PlatformConfigService.addOrUpdatePlan(plan);
+    setPlansList(PlatformConfigService.getSubscriptionPlans());
+    setAuditLogs(AdminPlatformService.getAuditLogs());
+    setEditingPlan(null);
+    setIsAddingNewPlan(false);
+    alert(`Subscription Plan "${plan.name}" saved successfully!`);
+  };
+
+  const handleDeletePlan = (planId: string, planName: string) => {
+    if (confirm(`Are you sure you want to delete the subscription plan "${planName}"?`)) {
+      PlatformConfigService.deletePlan(planId);
+      setPlansList(PlatformConfigService.getSubscriptionPlans());
+      setAuditLogs(AdminPlatformService.getAuditLogs());
+      alert(`Subscription plan "${planName}" removed.`);
+    }
+  };
 
   // Image Provider & Runware States
   const [runwareKeyInput, setRunwareKeyInput] = useState('');
@@ -1143,26 +1165,202 @@ export const AdminDashboardPage: React.FC<AdminDashboardPageProps> = ({ onNaviga
           </div>
         )}
 
-        {/* SUBSCRIPTIONS & PLANS MANAGEMENT */}
+        {/* DYNAMIC SUBSCRIPTION PLANS & TIERS MANAGEMENT */}
         {(activeTab === 'subscriptions' || activeTab === 'plans') && (
           <div className="glass-panel p-6 rounded-3xl border border-slate-800 space-y-6 text-xs">
-            <h3 className="font-cinzel font-bold text-base text-amber-300">Subscription Plans & Tiers Matrix</h3>
+            <div className="flex justify-between items-center">
+              <div>
+                <h3 className="font-cinzel font-bold text-base text-amber-300">Subscription Plans & Dynamic Tiers Control Center</h3>
+                <p className="text-slate-400 text-[11px]">Add new plans, edit pricing, update monthly credit quotas, or remove legacy plans.</p>
+              </div>
+              <button
+                onClick={() => {
+                  setEditingPlan({
+                    id: `plan_${Date.now()}`,
+                    name: 'Custom Tier Plan',
+                    slug: `plan-${Date.now().toString().slice(-4)}`,
+                    priceMonthly: 15,
+                    priceAnnual: 12,
+                    creditsPerMonth: 750,
+                    maxSavedMaps: 100,
+                    maxSavedWorlds: 15,
+                    allowedStyles: ['parchment', 'clean', 'dark-fantasy'],
+                    exportFormats: ['png', 'svg'],
+                    maxResolution: 'hd',
+                    commercialUse: false,
+                    enabled: true
+                  });
+                  setIsAddingNewPlan(true);
+                }}
+                className="px-4 py-2 bg-amber-500 hover:bg-amber-400 text-slate-950 font-bold rounded-xl flex items-center gap-1.5 shadow"
+              >
+                <Plus className="w-4 h-4" /> Add New Plan
+              </button>
+            </div>
 
+            {/* PLAN EDITOR MODAL / FORM */}
+            {(editingPlan || isAddingNewPlan) && (
+              <div className="p-5 bg-slate-950 rounded-2xl border border-amber-500/40 space-y-4 font-mono text-xs">
+                <div className="flex justify-between items-center pb-2 border-b border-slate-800">
+                  <strong className="font-cinzel text-amber-300 text-sm">
+                    {isAddingNewPlan ? 'Create New Subscription Plan' : `Edit Plan: ${editingPlan?.name}`}
+                  </strong>
+                  <button
+                    onClick={() => {
+                      setEditingPlan(null);
+                      setIsAddingNewPlan(false);
+                    }}
+                    className="text-slate-400 hover:text-slate-200"
+                  >
+                    Cancel
+                  </button>
+                </div>
+
+                {editingPlan && (
+                  <div className="space-y-3">
+                    <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+                      <div>
+                        <label className="text-slate-400 block mb-1">Plan Name</label>
+                        <input
+                          type="text"
+                          value={editingPlan.name}
+                          onChange={(e) => setEditingPlan({ ...editingPlan, name: e.target.value })}
+                          className="w-full bg-slate-900 border border-slate-800 rounded-xl p-2 text-slate-100"
+                        />
+                      </div>
+                      <div>
+                        <label className="text-slate-400 block mb-1">Monthly Price ($)</label>
+                        <input
+                          type="number"
+                          value={editingPlan.priceMonthly}
+                          onChange={(e) => setEditingPlan({ ...editingPlan, priceMonthly: parseFloat(e.target.value) || 0 })}
+                          className="w-full bg-slate-900 border border-slate-800 rounded-xl p-2 text-slate-100"
+                        />
+                      </div>
+                      <div>
+                        <label className="text-slate-400 block mb-1">Annual Monthly Rate ($)</label>
+                        <input
+                          type="number"
+                          value={editingPlan.priceAnnual}
+                          onChange={(e) => setEditingPlan({ ...editingPlan, priceAnnual: parseFloat(e.target.value) || 0 })}
+                          className="w-full bg-slate-900 border border-slate-800 rounded-xl p-2 text-slate-100"
+                        />
+                      </div>
+                    </div>
+
+                    <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+                      <div>
+                        <label className="text-slate-400 block mb-1">Monthly Credits Quota</label>
+                        <input
+                          type="number"
+                          value={editingPlan.creditsPerMonth}
+                          onChange={(e) => setEditingPlan({ ...editingPlan, creditsPerMonth: parseInt(e.target.value) || 0 })}
+                          className="w-full bg-slate-900 border border-slate-800 rounded-xl p-2 text-slate-100"
+                        />
+                      </div>
+                      <div>
+                        <label className="text-slate-400 block mb-1">Max Saved Maps Limit</label>
+                        <input
+                          type="number"
+                          value={editingPlan.maxSavedMaps}
+                          onChange={(e) => setEditingPlan({ ...editingPlan, maxSavedMaps: parseInt(e.target.value) || 0 })}
+                          className="w-full bg-slate-900 border border-slate-800 rounded-xl p-2 text-slate-100"
+                        />
+                      </div>
+                      <div>
+                        <label className="text-slate-400 block mb-1">Max Saved Worlds Limit</label>
+                        <input
+                          type="number"
+                          value={editingPlan.maxSavedWorlds}
+                          onChange={(e) => setEditingPlan({ ...editingPlan, maxSavedWorlds: parseInt(e.target.value) || 0 })}
+                          className="w-full bg-slate-900 border border-slate-800 rounded-xl p-2 text-slate-100"
+                        />
+                      </div>
+                    </div>
+
+                    <div className="flex gap-6 items-center pt-2">
+                      <label className="flex items-center gap-2 cursor-pointer text-slate-300">
+                        <input
+                          type="checkbox"
+                          checked={editingPlan.commercialUse}
+                          onChange={(e) => setEditingPlan({ ...editingPlan, commercialUse: e.target.checked })}
+                          className="accent-amber-500 w-4 h-4"
+                        />
+                        <span>Commercial License Granted</span>
+                      </label>
+                      <label className="flex items-center gap-2 cursor-pointer text-slate-300">
+                        <input
+                          type="checkbox"
+                          checked={editingPlan.enabled}
+                          onChange={(e) => setEditingPlan({ ...editingPlan, enabled: e.target.checked })}
+                          className="accent-emerald-500 w-4 h-4"
+                        />
+                        <span>Plan Enabled for Users</span>
+                      </label>
+                      <label className="flex items-center gap-2 cursor-pointer text-slate-300">
+                        <input
+                          type="checkbox"
+                          checked={!!editingPlan.isPopular}
+                          onChange={(e) => setEditingPlan({ ...editingPlan, isPopular: e.target.checked })}
+                          className="accent-purple-500 w-4 h-4"
+                        />
+                        <span>Highlight as "Most Popular"</span>
+                      </label>
+                    </div>
+
+                    <div className="pt-2 flex justify-end gap-2">
+                      <button
+                        onClick={() => handleSavePlan(editingPlan)}
+                        className="px-5 py-2 bg-amber-500 hover:bg-amber-400 text-slate-950 font-bold rounded-xl shadow"
+                      >
+                        Save Plan Configuration
+                      </button>
+                    </div>
+                  </div>
+                )}
+              </div>
+            )}
+
+            {/* DYNAMIC PLAN CARDS GRID */}
             <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-              {[
-                { name: 'Free Adventurer', price: '$0/mo', credits: '50 free signup credits', worlds: '1 World', maps: '3 Saved Maps', ai: 'Basic AI Naming', exports: 'PNG Standard' },
-                { name: 'World Creator', price: '$12/mo', credits: '500 credits / month', worlds: '10 Worlds', maps: 'Unlimited Maps', ai: 'World Bible & Lore AI', exports: 'PNG & SVG Vector' },
-                { name: 'Master Guildmaster (Pro)', price: '$29/mo', credits: '2,000 credits / month', worlds: 'Unlimited Worlds', maps: 'Unlimited Maps', ai: 'FLUX.1 Schnell & AI Campaign Engine', exports: 'HD PDF Worldbook & SVG' }
-              ].map((tier) => (
-                <div key={tier.name} className="p-5 bg-slate-950 rounded-2xl border border-slate-800 space-y-3">
-                  <strong className="font-cinzel text-amber-400 text-sm block">{tier.name}</strong>
-                  <span className="text-xl font-bold font-mono text-slate-100 block">{tier.price}</span>
+              {plansList.map((plan) => (
+                <div key={plan.id} className="p-5 bg-slate-950 rounded-2xl border border-slate-800 space-y-3 relative group">
+                  <div className="flex justify-between items-start">
+                    <div>
+                      <strong className="font-cinzel text-amber-400 text-sm block">{plan.name}</strong>
+                      <span className="text-xl font-bold font-mono text-slate-100 block">${plan.priceMonthly}/mo</span>
+                    </div>
+                    <span className={`px-2 py-0.5 rounded text-[9px] font-mono uppercase font-bold ${
+                      plan.enabled ? 'bg-emerald-500/20 text-emerald-300 border border-emerald-500/30' : 'bg-rose-500/20 text-rose-300 border border-rose-500/30'
+                    }`}>
+                      {plan.enabled ? 'Active' : 'Disabled'}
+                    </span>
+                  </div>
+
                   <div className="space-y-1 text-slate-400 font-mono text-[11px] pt-2 border-t border-slate-900">
-                    <p>• {tier.credits}</p>
-                    <p>• {tier.worlds}</p>
-                    <p>• {tier.maps}</p>
-                    <p>• {tier.ai}</p>
-                    <p>• {tier.exports}</p>
+                    <p>• {plan.creditsPerMonth} credits / month</p>
+                    <p>• {plan.maxSavedWorlds} Worlds max</p>
+                    <p>• {plan.maxSavedMaps} Maps max</p>
+                    <p>• Exports: {plan.exportFormats.join(', ').toUpperCase()}</p>
+                    <p>• License: {plan.commercialUse ? 'Commercial' : 'Personal'}</p>
+                  </div>
+
+                  <div className="pt-2 flex justify-end gap-2 border-t border-slate-900">
+                    <button
+                      onClick={() => {
+                        setEditingPlan(plan);
+                        setIsAddingNewPlan(false);
+                      }}
+                      className="px-3 py-1 bg-amber-500/20 text-amber-300 hover:bg-amber-500/30 font-bold rounded-lg border border-amber-500/30 text-[11px]"
+                    >
+                      Edit Plan
+                    </button>
+                    <button
+                      onClick={() => handleDeletePlan(plan.id, plan.name)}
+                      className="px-3 py-1 bg-rose-500/20 text-rose-300 hover:bg-rose-500/30 font-bold rounded-lg border border-rose-500/30 text-[11px]"
+                    >
+                      Remove
+                    </button>
                   </div>
                 </div>
               ))}
