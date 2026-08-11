@@ -573,6 +573,53 @@ function AppRouter() {
     );
   }
 
+  // Super Admin Control Center Routes (/admin, /admin/dashboard, /admin/login, /admin/seo)
+  if (path.startsWith('/admin')) {
+    if (path === '/admin/login') {
+      return (
+        <AdminLoginPage
+          onNavigateHome={() => navigate('/')}
+          onLoginSuccess={() => navigate('/admin')}
+        />
+      );
+    }
+
+    if (path === '/admin/seo') {
+      if (!isAdmin) {
+        return (
+          <AdminLoginPage
+            onNavigateHome={() => navigate('/')}
+            onLoginSuccess={() => navigate('/admin/seo')}
+          />
+        );
+      }
+      return (
+        <SeoAdminPage
+          onNavigateHome={() => navigate('/')}
+        />
+      );
+    }
+
+    if (!isAdmin) {
+      return (
+        <AdminLoginPage
+          onNavigateHome={() => navigate('/')}
+          onLoginSuccess={() => navigate('/admin')}
+        />
+      );
+    }
+
+    return (
+      <AdminDashboardPage
+        onNavigateHome={() => navigate('/')}
+        onLogout={() => {
+          logout();
+          navigate('/admin/login');
+        }}
+      />
+    );
+  }
+
   if (path === '/create') {
     return (
       <CreatePage
