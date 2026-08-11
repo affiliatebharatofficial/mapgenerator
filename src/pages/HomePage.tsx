@@ -25,6 +25,8 @@ export const HomePage: React.FC<HomePageProps> = ({ onNavigateCreate, onSelectMa
       <Header
         onNavigateCreate={onNavigateCreate}
         onNavigateHome={() => window.scrollTo({ top: 0, behavior: 'smooth' })}
+        onNavigateLogin={() => (window.location.pathname = '/login')}
+        onNavigateSignup={() => (window.location.pathname = '/signup')}
       />
 
       <main className="flex-1">

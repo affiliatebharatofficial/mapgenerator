@@ -7,6 +7,7 @@ interface HeaderProps {
   onNavigateCreate: () => void;
   onNavigateHome: () => void;
   onNavigateLogin?: () => void;
+  onNavigateSignup?: () => void;
   onNavigateDashboard?: () => void;
   onNavigateWorlds?: () => void;
   onNavigateGallery?: () => void;
@@ -20,6 +21,7 @@ export const Header: React.FC<HeaderProps> = ({
   onNavigateCreate,
   onNavigateHome,
   onNavigateLogin,
+  onNavigateSignup,
   onNavigateDashboard,
   onNavigateWorlds,
   onNavigateGallery,
@@ -254,10 +256,22 @@ export const Header: React.FC<HeaderProps> = ({
           ) : (
             <>
               <button
-                onClick={onNavigateLogin}
+                onClick={() => {
+                  if (onNavigateLogin) onNavigateLogin();
+                  else window.location.pathname = '/login';
+                }}
                 className="px-4 py-2 text-xs font-semibold text-slate-300 hover:text-amber-300 transition-colors"
               >
                 Sign In
+              </button>
+              <button
+                onClick={() => {
+                  if (onNavigateSignup) onNavigateSignup();
+                  else window.location.pathname = '/signup';
+                }}
+                className="px-4 py-2 text-xs font-semibold bg-amber-500/10 hover:bg-amber-500/20 text-amber-300 border border-amber-500/30 rounded-xl transition-colors"
+              >
+                Sign Up
               </button>
               <button
                 onClick={onNavigateCreate}
@@ -321,9 +335,28 @@ export const Header: React.FC<HeaderProps> = ({
                 <button onClick={() => (onNavigatePricing ? onNavigatePricing() : (window.location.pathname = '/pricing'))} className="text-left py-2 px-3 hover:text-amber-400">
                   Pricing
                 </button>
-                <button onClick={onNavigateLogin} className="text-left py-2 px-3 text-amber-400 font-bold border-t border-slate-800 pt-3">
-                  Sign In / Register
-                </button>
+                <div className="flex gap-2 pt-3 border-t border-slate-800">
+                  <button
+                    onClick={() => {
+                      setMobileMenuOpen(false);
+                      if (onNavigateLogin) onNavigateLogin();
+                      else window.location.pathname = '/login';
+                    }}
+                    className="flex-1 py-2.5 text-center text-xs font-bold text-amber-300 bg-amber-500/10 border border-amber-500/30 rounded-xl"
+                  >
+                    Sign In
+                  </button>
+                  <button
+                    onClick={() => {
+                      setMobileMenuOpen(false);
+                      if (onNavigateSignup) onNavigateSignup();
+                      else window.location.pathname = '/signup';
+                    }}
+                    className="flex-1 py-2.5 text-center text-xs font-bold text-slate-950 bg-amber-500 rounded-xl"
+                  >
+                    Sign Up
+                  </button>
+                </div>
               </>
             )}
           </nav>
