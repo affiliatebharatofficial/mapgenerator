@@ -46,6 +46,32 @@ const LOCAL_PROFILE_KEY = 'createfantasymap_auth_profile';
 
 const RESERVED_USERNAMES = ['admin', 'support', 'createfantasymap', 'api', 'dashboard', 'login', 'signup', 'settings', 'gallery'];
 
+const ALL_USERS_KEY = 'createfantasymap_registered_users_list';
+
+function saveToUserRegistry(account: UserAccount, prof: UserProfile) {
+  try {
+    const raw = localStorage.getItem(ALL_USERS_KEY);
+    const usersList: Array<any> = raw ? JSON.parse(raw) : [];
+    const idx = usersList.findIndex((u) => u.id === account.id || u.email === account.email);
+    const record = {
+      id: account.id,
+      email: account.email,
+      displayName: prof.display_name,
+      username: prof.username,
+      role: account.role || 'user',
+      created_at: prof.created_at || new Date().toISOString()
+    };
+    if (idx >= 0) {
+      usersList[idx] = { ...usersList[idx], ...record };
+    } else {
+      usersList.push(record);
+    }
+    localStorage.setItem(ALL_USERS_KEY, JSON.stringify(usersList));
+  } catch {
+    // ignore
+  }
+}
+
 export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const [user, setUser] = useState<UserAccount | null>(() => {
     try {
@@ -103,6 +129,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       setProfile(newProfile);
       localStorage.setItem(LOCAL_USER_KEY, JSON.stringify(newUser));
       localStorage.setItem(LOCAL_PROFILE_KEY, JSON.stringify(newProfile));
+      saveToUserRegistry(newUser, newProfile);
 
       return { success: true };
     } finally {
@@ -145,6 +172,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       setProfile(newProfile);
       localStorage.setItem(LOCAL_USER_KEY, JSON.stringify(newUser));
       localStorage.setItem(LOCAL_PROFILE_KEY, JSON.stringify(newProfile));
+      saveToUserRegistry(newUser, newProfile);
 
       return { success: true };
     } finally {

@@ -143,30 +143,96 @@ export const AdminPlatformService = {
       return data ? JSON.parse(data) : [];
     }
 
-    try {
-      const { data: profiles } = await supabase.from('profiles').select('*');
-      if (!profiles || profiles.length === 0) return [];
+    const userMap = new Map<string, AdminUserItem>();
 
-      return profiles.map((p) => {
-        const savedPlan = localStorage.getItem(`createfantasymap_user_plan_${p.id}`) || p.plan || 'free';
-        const savedCredits = localStorage.getItem(`createfantasymap_credits_${p.id}`);
-        return {
-          id: p.id,
-          email: p.email || (p.username ? `${p.username}@user.com` : 'user@createfantasymap.com'),
-          displayName: p.display_name || p.username || 'User',
-          plan: savedPlan,
-          credits: savedCredits ? parseInt(savedCredits, 10) : (p.credits || 50),
-          worldsCount: 0,
-          mapsCount: 0,
-          campaignsCount: 0,
-          isSuspended: false,
-          joinedAt: p.created_at ? p.created_at.substring(0, 10) : '2026-01-01',
-          lastActive: 'Today'
-        };
-      });
-    } catch {
-      return [];
+    // 1. Fetch Supabase Profiles
+    if (isSupabaseConfigured) {
+      try {
+        const { data: profiles } = await supabase.from('profiles').select('*');
+        if (profiles && profiles.length > 0) {
+          profiles.forEach((p) => {
+            const savedPlan = localStorage.getItem(`createfantasymap_user_plan_${p.id}`) || p.plan || 'free';
+            const savedCredits = localStorage.getItem(`createfantasymap_credits_${p.id}`);
+            const email = p.email || (p.username ? `${p.username}@user.com` : 'user@createfantasymap.com');
+            userMap.set(p.id, {
+              id: p.id,
+              email,
+              displayName: p.display_name || p.username || 'User',
+              plan: savedPlan,
+              credits: savedCredits ? parseInt(savedCredits, 10) : (p.credits || 50),
+              worldsCount: 0,
+              mapsCount: 0,
+              campaignsCount: 0,
+              isSuspended: false,
+              joinedAt: p.created_at ? p.created_at.substring(0, 10) : '2026-01-01',
+              lastActive: 'Today'
+            });
+          });
+        }
+      } catch {
+        // ignore db error
+      }
     }
+
+    // 2. Fetch Global Registered Users Registry from localStorage
+    try {
+      const rawReg = localStorage.getItem('createfantasymap_registered_users_list');
+      if (rawReg) {
+        const regList: Array<any> = JSON.parse(rawReg);
+        regList.forEach((reg) => {
+          if (!userMap.has(reg.id)) {
+            const savedPlan = localStorage.getItem(`createfantasymap_user_plan_${reg.id}`) || 'free';
+            const savedCredits = localStorage.getItem(`createfantasymap_credits_${reg.id}`);
+            userMap.set(reg.id, {
+              id: reg.id,
+              email: reg.email,
+              displayName: reg.displayName || reg.username || reg.email.split('@')[0],
+              plan: savedPlan,
+              credits: savedCredits ? parseInt(savedCredits, 10) : 50,
+              worldsCount: 0,
+              mapsCount: 0,
+              campaignsCount: 0,
+              isSuspended: false,
+              joinedAt: reg.created_at ? reg.created_at.substring(0, 10) : new Date().toISOString().substring(0, 10),
+              lastActive: 'Active Now'
+            });
+          }
+        });
+      }
+    } catch {
+      // ignore
+    }
+
+    // 3. Include currently logged-in local user if active
+    try {
+      const rawLocalUser = localStorage.getItem('createfantasymap_auth_user');
+      const rawLocalProfile = localStorage.getItem('createfantasymap_auth_profile');
+      if (rawLocalUser && rawLocalProfile) {
+        const u = JSON.parse(rawLocalUser);
+        const p = JSON.parse(rawLocalProfile);
+        if (!userMap.has(u.id)) {
+          const savedPlan = localStorage.getItem(`createfantasymap_user_plan_${u.id}`) || 'free';
+          const savedCredits = localStorage.getItem(`createfantasymap_credits_${u.id}`);
+          userMap.set(u.id, {
+            id: u.id,
+            email: u.email,
+            displayName: p.display_name || u.email,
+            plan: savedPlan,
+            credits: savedCredits ? parseInt(savedCredits, 10) : 50,
+            worldsCount: 0,
+            mapsCount: 0,
+            campaignsCount: 0,
+            isSuspended: false,
+            joinedAt: p.created_at ? p.created_at.substring(0, 10) : new Date().toISOString().substring(0, 10),
+            lastActive: 'Active Now'
+          });
+        }
+      }
+    } catch {
+      // ignore
+    }
+
+    return Array.from(userMap.values());
   },
 
   async setUserPlan(userId: string, userEmail: string, targetPlanId: string, adminUser: string = 'affiliatebharatofficial@gmail.com') {

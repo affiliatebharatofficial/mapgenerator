@@ -68,7 +68,7 @@ export interface AdminUserItem {
   id: string;
   email: string;
   displayName: string;
-  plan: 'Free' | 'Pro' | 'Creator';
+  plan: string;
   credits: number;
   worldsCount: number;
   mapsCount: number;
