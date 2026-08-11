@@ -1,6 +1,6 @@
 import React, { createContext, useContext, useState, useEffect, useCallback } from 'react';
 import type { PlanId, EntitlementKey } from '../../config/plans';
-import { PLANS, checkPlanEntitlement } from '../../config/plans';
+import { checkPlanEntitlement, getDynamicPlanConfig } from '../../config/plans';
 import { useAuth } from './authStore';
 import { MockBillingProvider, setMockUserPlan, type SubscriptionStatusInfo } from '../billing/billingProvider';
 
@@ -46,7 +46,7 @@ export const SubscriptionProvider: React.FC<{ children: React.ReactNode }> = ({ 
   });
 
   const currentPlan = subscription.planId;
-  const planConfig = PLANS[currentPlan] || PLANS.free;
+  const planConfig = getDynamicPlanConfig(currentPlan);
 
   const [creditsTotal, setCreditsTotal] = useState<number>(planConfig.creditsPerMonth);
   const [creditsUsed, setCreditsUsed] = useState<number>(0);
@@ -60,7 +60,7 @@ export const SubscriptionProvider: React.FC<{ children: React.ReactNode }> = ({ 
       const sub = await MockBillingProvider.getSubscriptionStatus(userId);
       setSubscription(sub);
 
-      const plan = PLANS[sub.planId] || PLANS.free;
+      const plan = getDynamicPlanConfig(sub.planId);
       setCreditsTotal(plan.creditsPerMonth);
 
       try {
@@ -155,7 +155,7 @@ export const SubscriptionProvider: React.FC<{ children: React.ReactNode }> = ({ 
   const upgradePlan = async (newPlanId: PlanId) => {
     const updated = setMockUserPlan(userId, newPlanId);
     setSubscription(updated);
-    const newPlan = PLANS[newPlanId] || PLANS.free;
+    const newPlan = getDynamicPlanConfig(newPlanId);
     setCreditsTotal(newPlan.creditsPerMonth);
     setCreditsUsed(0);
     localStorage.setItem(`${LOCAL_CREDITS_KEY}_${userId}`, '0');

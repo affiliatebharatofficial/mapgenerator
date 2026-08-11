@@ -133,9 +133,45 @@ export const PLANS: Record<PlanId, PlanConfig> = {
   }
 };
 
+import { PlatformConfigService } from '../lib/config/platformConfigService';
+
 export const AI_GENERATION_CREDIT_COST = 1;
 
+export function getDynamicPlanConfig(planId: string): PlanConfig {
+  try {
+    const adminPlans = PlatformConfigService.getSubscriptionPlans();
+    const adminPlan = adminPlans.find((p) => p.id === planId || p.slug === planId);
+    if (adminPlan) {
+      return {
+        id: (adminPlan.id as PlanId) || 'free',
+        name: adminPlan.name,
+        slug: adminPlan.slug,
+        priceMonthly: adminPlan.priceMonthly,
+        priceAnnual: adminPlan.priceAnnual,
+        description: `Plan managed dynamically by Platform Admin (${adminPlan.creditsPerMonth} credits/mo)`,
+        creditsPerMonth: adminPlan.creditsPerMonth,
+        maxSavedMaps: adminPlan.maxSavedMaps,
+        allowedStyles: (adminPlan.allowedStyles as MapStyle[]) || ['parchment', 'clean', 'dark-fantasy', 'hand-drawn', 'rpg'],
+        exportFormats: adminPlan.exportFormats,
+        maxResolution: adminPlan.maxResolution,
+        hasWatermark: false,
+        commercialUse: adminPlan.commercialUse,
+        features: [
+          `${adminPlan.creditsPerMonth} credits / month`,
+          `${adminPlan.maxSavedMaps} saved cloud maps`,
+          `${adminPlan.maxSavedWorlds} saved worlds`,
+          `Exports: ${adminPlan.exportFormats.join(', ').toUpperCase()}`
+        ],
+        entitlements: ['basic_generation', 'ai_generation', 'saved_maps', 'hd_export', 'ultra_hd_export', 'svg_export', 'pdf_export', 'premium_styles', 'premium_decorations']
+      };
+    }
+  } catch {
+    // fallback
+  }
+  return PLANS[planId as PlanId] || PLANS.free;
+}
+
 export function checkPlanEntitlement(planId: PlanId, entitlement: EntitlementKey): boolean {
-  const plan = PLANS[planId] || PLANS.free;
+  const plan = getDynamicPlanConfig(planId);
   return plan.entitlements.includes(entitlement);
 }
