@@ -83,6 +83,17 @@ function AppRouter() {
 
   // Phase 21 AI Image Studio Routes
   if (path.startsWith('/image-studio')) {
+    if (!isAuthenticated) {
+      return (
+        <LoginPage
+          onNavigateHome={() => navigate('/')}
+          onNavigateSignup={() => navigate('/signup')}
+          onNavigateForgotPassword={() => navigate('/forgot-password')}
+          onLoginSuccess={() => navigate('/image-studio')}
+        />
+      );
+    }
+
     let tab: 'generate' | 'library' | 'favorites' | 'styles' | 'recent' = 'generate';
     if (path === '/image-studio/library') tab = 'library';
     else if (path === '/image-studio/favorites') tab = 'favorites';
@@ -178,6 +189,17 @@ function AppRouter() {
 
   // Phase 10 RPG Campaign Routes
   if (path === '/campaigns') {
+    if (!isAuthenticated) {
+      return (
+        <LoginPage
+          onNavigateHome={() => navigate('/')}
+          onNavigateSignup={() => navigate('/signup')}
+          onNavigateForgotPassword={() => navigate('/forgot-password')}
+          onLoginSuccess={() => navigate('/campaigns')}
+        />
+      );
+    }
+
     return (
       <CampaignsListPage
         onNavigateCreate={() => {
@@ -192,6 +214,17 @@ function AppRouter() {
   }
 
   if (path.startsWith('/campaign/')) {
+    if (!isAuthenticated) {
+      return (
+        <LoginPage
+          onNavigateHome={() => navigate('/')}
+          onNavigateSignup={() => navigate('/signup')}
+          onNavigateForgotPassword={() => navigate('/forgot-password')}
+          onLoginSuccess={() => navigate(path)}
+        />
+      );
+    }
+
     const campaignId = path.replace('/campaign/', '');
     return (
       <CampaignDashboardPage
@@ -395,6 +428,17 @@ function AppRouter() {
 
   // Phase 5 Worldbuilding Routes
   if (path === '/worlds') {
+    if (!isAuthenticated) {
+      return (
+        <LoginPage
+          onNavigateHome={() => navigate('/')}
+          onNavigateSignup={() => navigate('/signup')}
+          onNavigateForgotPassword={() => navigate('/forgot-password')}
+          onLoginSuccess={() => navigate('/worlds')}
+        />
+      );
+    }
+
     return (
       <WorldsDashboardPage
         onNavigateCreate={() => {
@@ -409,6 +453,17 @@ function AppRouter() {
   }
 
   if (path.startsWith('/world/') && path.endsWith('/bible')) {
+    if (!isAuthenticated) {
+      return (
+        <LoginPage
+          onNavigateHome={() => navigate('/')}
+          onNavigateSignup={() => navigate('/signup')}
+          onNavigateForgotPassword={() => navigate('/forgot-password')}
+          onLoginSuccess={() => navigate(path)}
+        />
+      );
+    }
+
     const worldId = path.replace('/world/', '').replace('/bible', '');
     return (
       <WorldBiblePage
@@ -424,6 +479,17 @@ function AppRouter() {
   }
 
   if (path.startsWith('/world/')) {
+    if (!isAuthenticated) {
+      return (
+        <LoginPage
+          onNavigateHome={() => navigate('/')}
+          onNavigateSignup={() => navigate('/signup')}
+          onNavigateForgotPassword={() => navigate('/forgot-password')}
+          onLoginSuccess={() => navigate(path)}
+        />
+      );
+    }
+
     const worldId = path.replace('/world/', '');
     return (
       <WorldExplorerPage

@@ -51,7 +51,7 @@ export const ImageStudioPage: React.FC<ImageStudioPageProps> = ({
   onNavigateHome
 }) => {
   const { user, isAuthenticated } = useAuth();
-  const { creditsRemaining, creditsUsed, deductCredits, currentPlan } = useSubscription();
+  const { creditsRemaining, creditsUsed, deductCredits, refundCredits, currentPlan } = useSubscription();
 
   const userId = user?.id || 'user_current';
 
@@ -211,6 +211,7 @@ export const ImageStudioPage: React.FC<ImageStudioPageProps> = ({
       setStatusMessage('Image successfully generated and saved!');
       loadAssets();
     } catch (err: any) {
+      refundCredits(dynamicCreditCost, `Refund for failed generation: ${err.message || 'Error'}`);
       setGenerationStatus('Failed');
       setGenerationError(err.message || 'Image generation failed. Please try again.');
     }

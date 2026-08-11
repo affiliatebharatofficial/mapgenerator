@@ -1,0 +1,18 @@
+User-agent: *
+Allow: /
+Allow: /explore
+Allow: /feed
+Allow: /gallery
+Allow: /pricing
+Allow: /fantasy-map-generator
+Allow: /ai-fantasy-map-generator
+Allow: /dnd-map-generator
+Allow: /rpg-map-generator
+Disallow: /admin
+Disallow: /admin/*
+Disallow: /dashboard
+Disallow: /settings
+Disallow: /settings/*
+Disallow: /image-studio
+
+Sitemap: https://createfantasymap.com/sitemap.xml

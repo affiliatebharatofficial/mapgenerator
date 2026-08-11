@@ -48,7 +48,7 @@ export const ImageGenerationModal: React.FC<ImageGenerationModalProps> = ({
   onAssetAttached
 }) => {
   const { user, isAuthenticated } = useAuth();
-  const { creditsRemaining, deductCredits, currentPlan } = useSubscription();
+  const { creditsRemaining, deductCredits, refundCredits, currentPlan } = useSubscription();
 
   const userId = user?.id || 'user_current';
 
@@ -193,6 +193,7 @@ export const ImageGenerationModal: React.FC<ImageGenerationModalProps> = ({
       setStatus('Complete');
       setStatusMessage('Artwork successfully created and saved to your Image Library!');
     } catch (err: any) {
+      refundCredits(dynamicCreditCost, `Refund for failed generation: ${err.message || 'Error'}`);
       setStatus('Failed');
       setErrorMessage(err.message || 'Artwork generation failed. Please try again.');
     }
