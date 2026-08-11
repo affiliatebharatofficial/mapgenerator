@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Sparkles, Dices, Layers, Mountain, Trees, Compass, Shield, Lock, Zap } from 'lucide-react';
+import { Sparkles, Dices, Layers, Mountain, Trees, Compass, Shield, Lock, Zap, Globe } from 'lucide-react';
 import type { GeneratorConfig, MapStyle, MapType } from '../../types/map';
 import { MAP_STYLES } from '../../lib/map-engine/styles';
 import { useSubscription } from '../../lib/supabase/subscriptionStore';
@@ -39,6 +39,14 @@ export const GeneratorControls: React.FC<GeneratorControlsProps> = ({
     { id: 'archipelago', label: 'Archipelago', icon: '🗺️', desc: 'Cluster of smaller islands' },
     { id: 'kingdom', label: 'Kingdom', icon: '🏰', desc: 'Detailed sovereign borders' },
     { id: 'region', label: 'Region', icon: '⛰️', desc: 'Highland passes & valleys' }
+  ];
+
+  const realWorldTypes: { id: MapType; label: string; icon: string; desc: string }[] = [
+    { id: 'india', label: 'India (Bharat)', icon: '🇮🇳', desc: 'Himalayan north & southern peninsula' },
+    { id: 'usa', label: 'USA (America)', icon: '🇺🇸', desc: 'East/West coastlines & central plains' },
+    { id: 'europe', label: 'Europe', icon: '🇪🇺', desc: 'Peninsular coastlines & Mediterranean' },
+    { id: 'japan', label: 'Japan', icon: '🇯🇵', desc: 'Curved volcanic island arc' },
+    { id: 'uk', label: 'UK (Britain)', icon: '🇬🇧', desc: 'Great Britain & Ireland island realm' }
   ];
 
   const handleStyleSelect = (styleId: MapStyle) => {
@@ -137,10 +145,36 @@ export const GeneratorControls: React.FC<GeneratorControlsProps> = ({
             <div className="space-y-2">
               <label className="text-xs font-semibold text-amber-200/90 flex items-center gap-1.5 uppercase tracking-wider font-cinzel">
                 <Compass className="w-3.5 h-3.5 text-amber-400" />
-                <span>Map Type</span>
+                <span>Fantasy Map Type</span>
               </label>
               <div className="grid grid-cols-2 gap-2">
                 {mapTypes.map((item) => (
+                  <button
+                    key={item.id}
+                    onClick={() => onChangeConfig({ ...config, type: item.id })}
+                    className={`p-2.5 rounded-xl border text-left transition-all ${
+                      config.type === item.id
+                        ? 'bg-amber-500/15 border-amber-500/40 text-amber-200 shadow-md'
+                        : 'bg-slate-900/60 border-slate-800 text-slate-400 hover:border-slate-700'
+                    }`}
+                  >
+                    <div className="text-sm font-semibold flex items-center gap-1.5">
+                      <span>{item.icon}</span>
+                      <span className="text-xs">{item.label}</span>
+                    </div>
+                  </button>
+                ))}
+              </div>
+            </div>
+
+            {/* Real-World Geography Presets */}
+            <div className="space-y-2 pt-2 border-t border-slate-800/80">
+              <label className="text-xs font-semibold text-amber-200/90 flex items-center gap-1.5 uppercase tracking-wider font-cinzel">
+                <Globe className="w-3.5 h-3.5 text-amber-400" />
+                <span>Real-World Geography Presets</span>
+              </label>
+              <div className="grid grid-cols-2 gap-2">
+                {realWorldTypes.map((item) => (
                   <button
                     key={item.id}
                     onClick={() => onChangeConfig({ ...config, type: item.id })}

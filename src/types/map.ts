@@ -9,7 +9,7 @@ import type {
   LegendEntry
 } from './editorTools';
 
-export type MapType = 'continent' | 'island' | 'archipelago' | 'kingdom' | 'region';
+export type MapType = 'continent' | 'island' | 'archipelago' | 'kingdom' | 'region' | 'india' | 'usa' | 'europe' | 'japan' | 'uk';
 export type MapStyle = 'parchment' | 'dark-fantasy' | 'clean' | 'hand-drawn' | 'rpg';
 
 export interface Position {

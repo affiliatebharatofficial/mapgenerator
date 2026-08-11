@@ -69,7 +69,34 @@ export function generateFantasyMap(config: GeneratorConfig): FantasyMap {
 
   // Generate Type-specific Coastlines
   let coastline = '';
-  if (mapType === 'island') {
+  let customSeaName = 'THE GREAT SEA';
+  let customRealmName = config.name || `${mapType.toUpperCase()} OF ELDORIA`;
+
+  if (mapType === 'india') {
+    customSeaName = 'INDIAN OCEAN';
+    customRealmName = config.name || 'REALM OF BHARAT (INDIA)';
+    // Iconic Indian Peninsula SVG path
+    coastline = `M 380 120 Q 600 110 820 120 Q 840 240 760 360 Q 720 450 600 740 Q 480 450 420 350 Q 340 240 380 120 Z`;
+  } else if (mapType === 'usa') {
+    customSeaName = 'ATLANTIC & PACIFIC OCEANS';
+    customRealmName = config.name || 'UNITED REALMS OF AMERICA';
+    // Continental USA shape
+    coastline = `M 150 160 Q 450 140 750 160 L 980 200 Q 1060 400 1020 540 L 900 580 L 860 700 L 780 580 L 480 560 L 280 620 L 120 420 Z`;
+  } else if (mapType === 'europe') {
+    customSeaName = 'MEDITERRANEAN & NORTH SEA';
+    customRealmName = config.name || 'REALMS OF EUROPE';
+    coastline = `M 200 180 Q 550 120 900 150 Q 1020 320 920 520 Q 750 680 520 620 Q 320 660 180 480 Z`;
+  } else if (mapType === 'japan') {
+    customSeaName = 'PACIFIC OCEAN & SEA OF JAPAN';
+    customRealmName = config.name || 'JAPANESE ARCHIPELAGO';
+    // Curved Island Arc (Honshu, Hokkaido, Kyushu)
+    coastline = `M 780 140 Q 860 120 920 180 Q 880 240 820 220 Z M 520 280 Q 720 200 780 340 Q 620 480 480 400 Z M 340 460 Q 440 440 420 560 Q 320 540 340 460 Z`;
+  } else if (mapType === 'uk') {
+    customSeaName = 'NORTH SEA & IRISH SEA';
+    customRealmName = config.name || 'THE BRITISH ISLES';
+    // Great Britain & Ireland twin islands
+    coastline = `M 580 140 Q 720 120 700 320 Q 780 480 640 680 Q 520 520 560 380 Z M 320 320 Q 440 300 420 480 Q 300 520 320 320 Z`;
+  } else if (mapType === 'island') {
     const rx = width * 0.25;
     const ry = height * 0.25;
     coastline = `M ${cx + rx} ${cy}`;
@@ -162,8 +189,8 @@ export function generateFantasyMap(config: GeneratorConfig): FantasyMap {
 
   // Labels
   const labels: MapLabel[] = [
-    { id: `l_sea_${seed}`, text: 'THE GREAT SEA', x: cx - width * 0.38, y: cy, fontSize: 20, rotation: -90, color: '#3b82f6', category: 'ocean' },
-    { id: `l_realm_${seed}`, text: config.name || `${mapType.toUpperCase()} OF ELDORIA`, x: cx, y: cy - height * 0.35, fontSize: 24, category: 'region' }
+    { id: `l_sea_${seed}`, text: customSeaName, x: cx - width * 0.38, y: cy, fontSize: 20, rotation: -90, color: '#3b82f6', category: 'ocean' },
+    { id: `l_realm_${seed}`, text: customRealmName, x: cx, y: cy - height * 0.35, fontSize: 24, category: 'region' }
   ];
 
   return {
