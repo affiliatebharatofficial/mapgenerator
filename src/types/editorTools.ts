@@ -12,7 +12,11 @@ export type ActiveTool =
   | 'city'
   | 'location'
   | 'label'
-  | 'icon';
+  | 'icon'
+  | 'poi_placer'
+  | 'marker_placer'
+  | 'gm_note'
+  | 'artwork_attach';
 
 export type TerrainBrushType =
   | 'plains'

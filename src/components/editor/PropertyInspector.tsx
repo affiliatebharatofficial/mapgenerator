@@ -1,6 +1,7 @@
 import React from 'react';
-import { Tag, Building, Globe, Trash2, Sliders } from 'lucide-react';
+import { Tag, Building, Globe, Trash2, Sliders, MapPin, Crown, Compass, Sparkles } from 'lucide-react';
 import type { FantasyMap, SelectedObjectRef } from '../../types/map';
+import { PlatformConfigService } from '../../lib/config/platformConfigService';
 
 interface PropertyInspectorProps {
   map: FantasyMap;
@@ -18,7 +19,9 @@ export const PropertyInspector: React.FC<PropertyInspectorProps> = ({
   map,
   selectedObject,
   onUpdateCity,
+  onUpdateKingdom,
   onUpdateLabel,
+  onUpdatePOI,
   onDeleteSelected,
   onOpenWorldLink,
   onCreateWorldEntry
@@ -28,11 +31,12 @@ export const PropertyInspector: React.FC<PropertyInspectorProps> = ({
       <div className="p-6 text-center text-xs text-slate-500 font-sans space-y-2">
         <Sliders className="w-8 h-8 mx-auto text-slate-600" />
         <p className="font-semibold text-slate-400">No Object Selected</p>
-        <p className="text-[11px] leading-relaxed">Click any settlement, kingdom, label, or location on the map to inspect properties.</p>
+        <p className="text-[11px] leading-relaxed">Click any settlement, kingdom, POI, label, river, or road on the map to inspect properties.</p>
       </div>
     );
   }
 
+  const cartoConfig = PlatformConfigService.getCartographyConfig();
   const { type, id } = selectedObject;
 
   if (type === 'city') {
@@ -89,14 +93,13 @@ export const PropertyInspector: React.FC<PropertyInspectorProps> = ({
           <select
             value={city.type}
             onChange={(e) => onUpdateCity(id, { type: e.target.value })}
-            className="w-full bg-slate-950 border border-slate-800 rounded-xl p-2.5 text-xs text-slate-200 focus:outline-none"
+            className="w-full bg-slate-950 border border-slate-800 rounded-xl p-2.5 text-xs text-slate-200 focus:outline-none capitalize"
           >
-            <option value="capital">Capital</option>
-            <option value="city">Major City</option>
-            <option value="town">Town</option>
-            <option value="village">Village</option>
-            <option value="port">Port</option>
-            <option value="fortress">Fortress</option>
+            {cartoConfig.settlementTypes.filter((st: any) => st.enabled !== false).map((st: any) => (
+              <option key={st.id} value={st.id}>
+                {st.name}
+              </option>
+            ))}
           </select>
         </div>
 
@@ -107,6 +110,60 @@ export const PropertyInspector: React.FC<PropertyInspectorProps> = ({
             value={city.population || 10000}
             onChange={(e) => onUpdateCity(id, { population: parseInt(e.target.value) || 0 })}
             className="w-full bg-slate-950 border border-slate-800 rounded-xl p-2.5 text-xs text-slate-200 font-mono"
+          />
+        </div>
+      </div>
+    );
+  }
+
+  if (type === 'poi') {
+    const poi = map.pointsOfInterest.find((p) => p.id === id);
+    if (!poi) return null;
+
+    return (
+      <div className="space-y-4 font-sans text-xs">
+        <div className="flex justify-between items-start pb-2 border-b border-slate-800">
+          <div className="flex items-center gap-1.5">
+            <MapPin className="w-4 h-4 text-sky-400" />
+            <h4 className="font-cinzel font-bold text-sm text-slate-100">Point of Interest Properties</h4>
+          </div>
+          <button onClick={onDeleteSelected} className="p-1 text-slate-500 hover:text-rose-400">
+            <Trash2 className="w-4 h-4" />
+          </button>
+        </div>
+
+        <div className="space-y-1">
+          <label className="font-semibold text-slate-300">POI Name</label>
+          <input
+            type="text"
+            value={poi.name}
+            onChange={(e) => onUpdatePOI && onUpdatePOI(id, { name: e.target.value })}
+            className="w-full bg-slate-950 border border-slate-800 rounded-xl p-2.5 text-xs text-slate-100 font-bold focus:outline-none"
+          />
+        </div>
+
+        <div className="space-y-1">
+          <label className="font-semibold text-slate-300">Location Type</label>
+          <select
+            value={poi.type}
+            onChange={(e) => onUpdatePOI && onUpdatePOI(id, { type: e.target.value })}
+            className="w-full bg-slate-950 border border-slate-800 rounded-xl p-2.5 text-xs text-slate-200 focus:outline-none capitalize"
+          >
+            {cartoConfig.poiTypes.filter((pt: any) => pt.enabled !== false).map((pt: any) => (
+              <option key={pt.id} value={pt.id}>
+                {pt.name}
+              </option>
+            ))}
+          </select>
+        </div>
+
+        <div className="space-y-1">
+          <label className="font-semibold text-slate-300">Description</label>
+          <textarea
+            rows={3}
+            value={poi.description || ''}
+            onChange={(e) => onUpdatePOI && onUpdatePOI(id, { description: e.target.value })}
+            className="w-full bg-slate-950 border border-slate-800 rounded-xl p-2.5 text-xs text-slate-200 focus:outline-none"
           />
         </div>
       </div>
@@ -166,6 +223,45 @@ export const PropertyInspector: React.FC<PropertyInspectorProps> = ({
             value={label.rotation || 0}
             onChange={(e) => onUpdateLabel(id, { rotation: parseInt(e.target.value) })}
             className="w-full accent-amber-500 bg-slate-950 h-1.5 rounded-lg appearance-none cursor-pointer"
+          />
+        </div>
+      </div>
+    );
+  }
+
+  if (type === 'kingdom') {
+    const kng = map.kingdoms.find((k) => k.id === id);
+    if (!kng) return null;
+
+    return (
+      <div className="space-y-4 font-sans text-xs">
+        <div className="flex justify-between items-start pb-2 border-b border-slate-800">
+          <div className="flex items-center gap-1.5">
+            <Crown className="w-4 h-4 text-amber-400" />
+            <h4 className="font-cinzel font-bold text-sm text-slate-100">Kingdom Realm Properties</h4>
+          </div>
+          <button onClick={onDeleteSelected} className="p-1 text-slate-500 hover:text-rose-400">
+            <Trash2 className="w-4 h-4" />
+          </button>
+        </div>
+
+        <div className="space-y-1">
+          <label className="font-semibold text-slate-300">Kingdom Name</label>
+          <input
+            type="text"
+            value={kng.name}
+            onChange={(e) => onUpdateKingdom && onUpdateKingdom(id, { name: e.target.value })}
+            className="w-full bg-slate-950 border border-slate-800 rounded-xl p-2.5 text-xs text-slate-100 font-bold focus:outline-none"
+          />
+        </div>
+
+        <div className="space-y-1">
+          <label className="font-semibold text-slate-300">Ruler / Monarch</label>
+          <input
+            type="text"
+            value={kng.ruler || ''}
+            onChange={(e) => onUpdateKingdom && onUpdateKingdom(id, { ruler: e.target.value })}
+            className="w-full bg-slate-950 border border-slate-800 rounded-xl p-2.5 text-xs text-slate-200"
           />
         </div>
       </div>

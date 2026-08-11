@@ -32,6 +32,7 @@ import { AgentActionPreviewModal } from '../components/ai/AgentActionPreviewModa
 import { ConsistencyCheckerModal } from '../components/ai/ConsistencyCheckerModal';
 import { NamingAssistantModal } from '../components/ai/NamingAssistantModal';
 import { ArtisticMapRenderModal } from '../components/visuals/ArtisticMapRenderModal';
+import { ImageAssetPicker } from '../components/visuals/ImageAssetPicker';
 import { GeographicSettingsModal } from '../components/editor/GeographicSettingsModal';
 import { PartialRegenModal } from '../components/editor/PartialRegenModal';
 import { MapHealthModal } from '../components/editor/MapHealthModal';
@@ -182,6 +183,8 @@ export const CreatePage: React.FC<CreatePageProps> = ({
   const [showStylePickerModal, setShowStylePickerModal] = useState<boolean>(false);
   const [showCartographyLayersDrawer, setShowCartographyLayersDrawer] = useState<boolean>(false);
   const [showCommandPalette, setShowCommandPalette] = useState<boolean>(false);
+  const [isPreviewMode, setIsPreviewMode] = useState<boolean>(false);
+  const [showImageAssetPicker, setShowImageAssetPicker] = useState<boolean>(false);
 
   const [selectionFilter, setSelectionFilter] = useState<SelectionFilter>('all');
   const [sculptMode, setSculptMode] = useState<TerrainSculptMode>('raise');
@@ -550,6 +553,8 @@ export const CreatePage: React.FC<CreatePageProps> = ({
         isFullscreen={isFullscreen}
         onOpenStylePicker={() => setShowStylePickerModal(true)}
         onOpenCartographyLayers={() => setShowCartographyLayersDrawer(!showCartographyLayersDrawer)}
+        onTogglePreviewMode={() => setIsPreviewMode(!isPreviewMode)}
+        isPreviewMode={isPreviewMode}
       />
 
       {/* Phase 15 Precision Controls Sub-Bar */}
@@ -593,6 +598,7 @@ export const CreatePage: React.FC<CreatePageProps> = ({
           onToggleSnapToGrid={() => setSnapToGrid(!snapToGrid)}
           onToggleAIAssistant={() => setShowAIAssistantPanel(!showAIAssistantPanel)}
           isAIAssistantOpen={showAIAssistantPanel}
+          onOpenImageStudioPicker={() => setShowImageAssetPicker(true)}
         />
 
         {/* Desktop Left Generator Sidebar */}
@@ -638,6 +644,7 @@ export const CreatePage: React.FC<CreatePageProps> = ({
             onMouseMove={transformHook.handleMouseMove}
             onMouseUp={transformHook.handleMouseUp}
             svgRef={svgRef}
+            isPreviewMode={isPreviewMode}
           />
 
           {/* Bottom Right Interactive Minimap */}
@@ -974,6 +981,21 @@ export const CreatePage: React.FC<CreatePageProps> = ({
             else if (actId === 'export_studio') window.location.pathname = '/export';
           }}
           onClose={() => setShowCommandPalette(false)}
+        />
+      )}
+
+      {/* Phase 23: Image Studio Asset Integration Modal */}
+      {showImageAssetPicker && (
+        <ImageAssetPicker
+          isOpen={showImageAssetPicker}
+          entityType="map"
+          entityId={currentMap.id}
+          entityName={currentMap.name}
+          onSelectAsset={(asset) => {
+            alert(`Selected Artwork Asset "${asset.prompt || asset.id}" from Image Studio for Map!`);
+            setShowImageAssetPicker(false);
+          }}
+          onClose={() => setShowImageAssetPicker(false)}
         />
       )}
     </div>

@@ -33,6 +33,8 @@ export const LayerManager: React.FC<LayerManagerProps> = ({
     { key: 'locations', label: 'Locations & Ruins', group: 'Settlements' },
     { key: 'labels', label: 'Typography Labels', group: 'Text' },
     { key: 'decorations', label: 'Cartography Ornaments', group: 'Decorations' },
+    { key: 'user_artwork', label: 'Image Studio Artwork', group: 'Decorations' },
+    { key: 'private_gm', label: 'Private GM Layer (Secret)', group: 'Security' },
     { key: 'compass', label: 'Compass Rose', group: 'Decorations' },
     { key: 'legend', label: 'Map Legend', group: 'Decorations' },
     { key: 'grid', label: 'Map Grid', group: 'Grid' },

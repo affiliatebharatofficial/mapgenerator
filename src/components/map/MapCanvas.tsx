@@ -33,6 +33,7 @@ interface MapCanvasProps {
   onMouseMove: (e: React.MouseEvent) => void;
   onMouseUp: (e: React.MouseEvent) => void;
   svgRef: React.RefObject<SVGSVGElement | null>;
+  isPreviewMode?: boolean;
 }
 
 export const MapCanvas: React.FC<MapCanvasProps> = ({
@@ -51,7 +52,8 @@ export const MapCanvas: React.FC<MapCanvasProps> = ({
   onMouseDown,
   onMouseMove,
   onMouseUp,
-  svgRef
+  svgRef,
+  isPreviewMode = false
 }) => {
   const baseStyle = MAP_STYLES[map.style] || MAP_STYLES.parchment;
   const styleConfig = {
@@ -300,12 +302,26 @@ export const MapCanvas: React.FC<MapCanvasProps> = ({
                   >
                     {l.text}
                   </text>
-                  {isSelected && <rect x={-50} y={-15} width={100} height={24} fill="none" stroke="#38bdf8" strokeWidth={1.5} strokeDasharray="3,3" />}
+                  {isSelected && !isPreviewMode && <rect x={-50} y={-15} width={100} height={24} fill="none" stroke="#38bdf8" strokeWidth={1.5} strokeDasharray="3,3" />}
                 </g>
               );
             })}
 
-          {/* 11. Grid Overlay */}
+          {/* 11. Private GM Secret Layer (Never visible in Preview or Public Exports) */}
+          {layers.private_gm && !isPreviewMode && (
+            <g id="layer-private-gm" opacity={opacities['private_gm'] ? opacities['private_gm'] / 100 : 1}>
+              {map.pointsOfInterest?.filter((p: any) => p.isSecret || p.type === 'dungeon').map((p: any) => (
+                <g key={`gm_sec_${p.id}`} transform={`translate(${p.x}, ${p.y})`}>
+                  <circle r={18} fill="#be185d" opacity={0.3} stroke="#f43f5e" strokeWidth={1.5} strokeDasharray="3,3" />
+                  <text y={4} textAnchor="middle" fill="#fecdd3" fontSize={9} fontWeight="bold" fontFamily="monospace">
+                    GM
+                  </text>
+                </g>
+              ))}
+            </g>
+          )}
+
+          {/* 12. Grid Overlay */}
           {layers.grid && <rect width={map.width} height={map.height} fill="url(#grid-pattern)" pointerEvents="none" />}
 
           {/* 12. Compass Rose */}

@@ -10,7 +10,8 @@ import {
   Building,
   Tag,
   Grid,
-  Sparkles
+  Sparkles,
+  Image
 } from 'lucide-react';
 import type { ActiveTool, TerrainBrushType } from '../../types/editorTools';
 
@@ -23,6 +24,7 @@ interface ToolsSidebarProps {
   onToggleSnapToGrid: () => void;
   onToggleAIAssistant?: () => void;
   isAIAssistantOpen?: boolean;
+  onOpenImageStudioPicker?: () => void;
 }
 
 export const ToolsSidebar: React.FC<ToolsSidebarProps> = ({
@@ -33,7 +35,8 @@ export const ToolsSidebar: React.FC<ToolsSidebarProps> = ({
   onSelectTerrainBrush,
   onToggleSnapToGrid,
   onToggleAIAssistant,
-  isAIAssistantOpen
+  isAIAssistantOpen,
+  onOpenImageStudioPicker
 }) => {
   const terrainTypes: { id: TerrainBrushType; label: string; color: string }[] = [
     { id: 'plains', label: 'Plains', color: '#27ae60' },
@@ -169,6 +172,16 @@ export const ToolsSidebar: React.FC<ToolsSidebarProps> = ({
         >
           <Tag className="w-5 h-5" />
         </button>
+
+        {onOpenImageStudioPicker && (
+          <button
+            onClick={onOpenImageStudioPicker}
+            title="Attach Artwork from Image Studio"
+            className="w-10 h-10 rounded-xl flex items-center justify-center transition-all text-slate-400 hover:text-sky-300 hover:bg-slate-900"
+          >
+            <Image className="w-5 h-5" />
+          </button>
+        )}
       </div>
 
       <div className="w-8 border-t border-slate-800" />

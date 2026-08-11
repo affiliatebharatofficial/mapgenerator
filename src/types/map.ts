@@ -114,6 +114,8 @@ export interface MapLayers {
   compass: boolean;
   legend: boolean;
   coordinates?: boolean;
+  private_gm?: boolean;
+  user_artwork?: boolean;
 }
 
 export interface AdvancedLayersState {
@@ -201,7 +203,7 @@ export interface GeneratorConfig {
 }
 
 export interface SelectedObjectRef {
-  type: 'city' | 'kingdom' | 'label' | 'poi' | 'river' | 'road' | 'region' | 'kingdom_border';
+  type: 'city' | 'kingdom' | 'label' | 'poi' | 'river' | 'road' | 'region' | 'kingdom_border' | 'gm_note' | 'custom_marker' | 'user_artwork';
   id: string;
 }
 

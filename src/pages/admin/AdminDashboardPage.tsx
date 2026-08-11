@@ -36,7 +36,8 @@ import {
   Sparkles,
   Lock,
   Archive,
-  BarChart3
+  BarChart3,
+  Palette
 } from 'lucide-react';
 import { AdminPlatformService } from '../../lib/admin/adminPlatformService';
 import { PlatformConfigService, type CreditCostCatalogItem, type MapProceduralConfig, type AIPromptTemplate, type EmergencyControls, type SubscriptionPlanItem } from '../../lib/config/platformConfigService';
@@ -68,6 +69,7 @@ type AdminTab =
   | 'worlds'
   | 'maps'
   | 'map_generator'
+  | 'cartography'
   | 'campaigns'
   | 'ai'
   | 'ai_providers'
@@ -371,6 +373,7 @@ export const AdminDashboardPage: React.FC<AdminDashboardPageProps> = ({ onNaviga
                 { id: 'worlds', label: 'Worlds', icon: Globe },
                 { id: 'maps', label: 'Maps Catalog', icon: MapIcon },
                 { id: 'map_generator', label: 'Map Generator Parameters', icon: Sliders },
+                { id: 'cartography', label: 'Cartography Controls', icon: Palette },
                 { id: 'campaigns', label: 'Campaigns', icon: Shield }
               ].map((item) => (
                 <button
@@ -516,6 +519,7 @@ export const AdminDashboardPage: React.FC<AdminDashboardPageProps> = ({ onNaviga
               {activeTab === 'users' && 'User Accounts Management'}
               {activeTab === 'worlds' && 'Fantasy Worlds Directory'}
               {activeTab === 'maps' && 'Generated Maps Catalog'}
+              {activeTab === 'cartography' && 'Dynamic Cartography Engine Controls'}
               {activeTab === 'campaigns' && 'RPG Campaign Directory'}
               {activeTab === 'ai' && 'AI Provider & Model Control Center'}
               {activeTab === 'ai_routing' && 'AI Feature Model Routing'}
@@ -727,6 +731,51 @@ export const AdminDashboardPage: React.FC<AdminDashboardPageProps> = ({ onNaviga
                 ))}
               </div>
             )}
+          </div>
+        )}
+
+        {/* CARTOGRAPHY CONTROLS */}
+        {activeTab === 'cartography' && (
+          <div className="space-y-6 text-xs">
+            <div className="glass-panel p-6 rounded-3xl border border-slate-800 space-y-4">
+              <h3 className="font-cinzel font-bold text-base text-amber-300">Dynamic Cartography Engine Controls</h3>
+              <p className="text-slate-400 text-xs">Manage configured POI types, settlement symbols, road styles, and river presets used by Map Editor 2.0.</p>
+
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4 font-mono">
+                <div className="p-4 bg-slate-950 rounded-2xl border border-slate-800 space-y-2">
+                  <span className="text-amber-400 font-bold block uppercase text-[11px]">POI Location Types ({PlatformConfigService.getCartographyConfig().poiTypes.length})</span>
+                  <div className="space-y-1 max-h-40 overflow-y-auto pr-1 text-[11px]">
+                    {PlatformConfigService.getCartographyConfig().poiTypes.map((pt: any) => (
+                      <div key={pt.id} className="flex justify-between items-center p-1.5 bg-slate-900 rounded-lg">
+                        <span className="text-slate-200">{pt.name} ({pt.id})</span>
+                        <span className="text-emerald-400 font-bold">Enabled</span>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+
+                <div className="p-4 bg-slate-950 rounded-2xl border border-slate-800 space-y-2">
+                  <span className="text-amber-400 font-bold block uppercase text-[11px]">Settlement Types ({PlatformConfigService.getCartographyConfig().settlementTypes.length})</span>
+                  <div className="space-y-1 max-h-40 overflow-y-auto pr-1 text-[11px]">
+                    {PlatformConfigService.getCartographyConfig().settlementTypes.map((st: any) => (
+                      <div key={st.id} className="flex justify-between items-center p-1.5 bg-slate-900 rounded-lg">
+                        <span className="text-slate-200">{st.name} (Size {st.defaultSize})</span>
+                        <span className="text-emerald-400 font-bold">Enabled</span>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              </div>
+
+              <div className="pt-2 flex justify-end">
+                <button
+                  onClick={() => alert('Cartography configurations saved to system catalog!')}
+                  className="px-5 py-2 bg-amber-500 hover:bg-amber-400 text-slate-950 font-bold rounded-xl shadow"
+                >
+                  Save Cartography Catalog
+                </button>
+              </div>
+            </div>
           </div>
         )}
 

@@ -13,7 +13,8 @@ import {
   Edit2,
   Check,
   Palette,
-  Layers
+  Layers,
+  Eye
 } from 'lucide-react';
 import type { FantasyMap } from '../../types/map';
 
@@ -37,6 +38,8 @@ interface ToolbarProps {
   isFullscreen?: boolean;
   onOpenStylePicker?: () => void;
   onOpenCartographyLayers?: () => void;
+  onTogglePreviewMode?: () => void;
+  isPreviewMode?: boolean;
 }
 
 export const Toolbar: React.FC<ToolbarProps> = ({
@@ -56,7 +59,9 @@ export const Toolbar: React.FC<ToolbarProps> = ({
   onToggleFullscreen,
   isFullscreen,
   onOpenStylePicker,
-  onOpenCartographyLayers
+  onOpenCartographyLayers,
+  onTogglePreviewMode,
+  isPreviewMode = false
 }) => {
   const [isEditingTitle, setIsEditingTitle] = useState(false);
   const [titleInput, setTitleInput] = useState(map.name);
@@ -176,6 +181,21 @@ export const Toolbar: React.FC<ToolbarProps> = ({
           >
             <Layers className="w-4 h-4 text-amber-400" />
             <span>Layers</span>
+          </button>
+        )}
+
+        {onTogglePreviewMode && (
+          <button
+            onClick={onTogglePreviewMode}
+            className={`p-2 rounded-lg transition-colors flex items-center gap-1.5 text-xs font-semibold ${
+              isPreviewMode
+                ? 'bg-amber-500/20 text-amber-300 border border-amber-500/40'
+                : 'text-slate-400 hover:text-amber-300'
+            }`}
+            title="Toggle Clean Preview Mode"
+          >
+            <Eye className="w-4 h-4 text-amber-400" />
+            <span>{isPreviewMode ? 'Exit Preview' : 'Preview'}</span>
           </button>
         )}
 

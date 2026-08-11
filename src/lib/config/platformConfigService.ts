@@ -314,5 +314,52 @@ export const PlatformConfigService = {
     let plans = this.getSubscriptionPlans();
     plans = plans.filter((p) => p.id !== planId);
     this.saveSubscriptionPlans(plans);
+  },
+
+  // ----------------------------------------------------
+  // 6. DYNAMIC CARTOGRAPHY CONTROL CATALOG (PHASE 23)
+  // ----------------------------------------------------
+  getCartographyConfig() {
+    const data = localStorage.getItem('createfantasymap_config_cartography');
+    if (data) return JSON.parse(data);
+    return {
+      poiTypes: [
+        { id: 'ruins', name: 'Ancient Ruins', icon: 'ruins', enabled: true },
+        { id: 'dungeon', name: 'Dungeon Catacombs', icon: 'dungeon', enabled: true },
+        { id: 'tower', name: 'Wizard Tower', icon: 'tower', enabled: true },
+        { id: 'castle', name: 'Fortified Castle', icon: 'castle', enabled: true },
+        { id: 'shrine', name: 'Sacred Shrine', icon: 'shrine', enabled: true },
+        { id: 'mine', name: 'Dwarven Mine', icon: 'mine', enabled: true },
+        { id: 'temple', name: 'Grand Temple', icon: 'temple', enabled: true },
+        { id: 'battlefield', name: 'Ancient Battlefield', icon: 'battlefield', enabled: true }
+      ],
+      settlementTypes: [
+        { id: 'capital', name: 'Capital City', defaultSize: 12, enabled: true },
+        { id: 'city', name: 'Major City', defaultSize: 8, enabled: true },
+        { id: 'town', name: 'Township', defaultSize: 6, enabled: true },
+        { id: 'village', name: 'Rural Village', defaultSize: 5, enabled: true },
+        { id: 'port', name: 'Harbor Port', defaultSize: 7, enabled: true },
+        { id: 'fortress', name: 'Military Fortress', defaultSize: 8, enabled: true }
+      ],
+      roadStyles: [
+        { id: 'main', name: 'Royal Highway', strokeWidth: 3, color: '#d4af37', dash: 'none', enabled: true },
+        { id: 'trade', name: 'Trade Route', strokeWidth: 2, color: '#8e44ad', dash: '4,4', enabled: true },
+        { id: 'trail', name: 'Wilderness Trail', strokeWidth: 1.5, color: '#d35400', dash: '2,2', enabled: true }
+      ],
+      riverStyles: [
+        { id: 'major', name: 'Major River', width: 5, opacity: 0.9, enabled: true },
+        { id: 'minor', name: 'Tributary Stream', width: 2.5, opacity: 0.8, enabled: true }
+      ],
+      regionTypes: [
+        { id: 'kingdom', name: 'Sovereign Realm', strokeColor: '#d4af37', opacity: 0.3, enabled: true },
+        { id: 'province', name: 'Imperial Province', strokeColor: '#3498db', opacity: 0.25, enabled: true },
+        { id: 'wilderness', name: 'Wilderness Wastes', strokeColor: '#27ae60', opacity: 0.2, enabled: true }
+      ]
+    };
+  },
+
+  saveCartographyConfig(config: any) {
+    localStorage.setItem('createfantasymap_config_cartography', JSON.stringify(config));
+    AdminPlatformService.addAuditLog('Update Cartography Settings', 'Map Engine', 'Saved Cartography Engine Dynamic Controls');
   }
 };
