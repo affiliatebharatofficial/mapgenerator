@@ -33,6 +33,7 @@ import { ConsistencyCheckerModal } from '../components/ai/ConsistencyCheckerModa
 import { NamingAssistantModal } from '../components/ai/NamingAssistantModal';
 import { ArtisticMapRenderModal } from '../components/visuals/ArtisticMapRenderModal';
 import { ImageAssetPicker } from '../components/visuals/ImageAssetPicker';
+import { ImageStudioService } from '../lib/ai/imageStudioService';
 import { GeographicSettingsModal } from '../components/editor/GeographicSettingsModal';
 import { PartialRegenModal } from '../components/editor/PartialRegenModal';
 import { MapHealthModal } from '../components/editor/MapHealthModal';
@@ -291,6 +292,9 @@ export const CreatePage: React.FC<CreatePageProps> = ({
     } else if (type === 'forest') {
       const forests = currentMap.forests.filter((f: any, idx) => (f.id || `f_${idx}`) !== id);
       pushState({ ...currentMap, forests });
+    } else if (type === 'user_artwork') {
+      const userArtworks = (currentMap.userArtworks || []).filter((art) => art.id !== id);
+      pushState({ ...currentMap, userArtworks });
     }
 
     setSelectedObject(null);
@@ -481,6 +485,9 @@ export const CreatePage: React.FC<CreatePageProps> = ({
       } else if (type === 'forest') {
         const updatedForests = currentMap.forests.map((f: any, idx) => ((f.id || `f_${idx}`) === id ? { ...f, x: pos.x, y: pos.y } : f));
         pushState({ ...currentMap, forests: updatedForests, updatedAt: new Date().toISOString() });
+      } else if (type === 'user_artwork') {
+        const updatedArtworks = (currentMap.userArtworks || []).map((art) => (art.id === id ? { ...art, x: pos.x, y: pos.y } : art));
+        pushState({ ...currentMap, userArtworks: updatedArtworks, updatedAt: new Date().toISOString() });
       }
     },
     [currentMap, pushState]
@@ -624,7 +631,7 @@ export const CreatePage: React.FC<CreatePageProps> = ({
 
   // Property Inspector Updates
   const handleUpdateCity = useCallback(
-    (id: string, updates: Partial<{ name: string; type: any; population: number }>) => {
+    (id: string, updates: Partial<{ name: string; type: any; population: number; artworkUrl?: string }>) => {
       const updatedCities = currentMap.cities.map((c) => (c.id === id ? { ...c, ...updates } : c));
       pushState({ ...currentMap, cities: updatedCities });
     },
@@ -632,7 +639,7 @@ export const CreatePage: React.FC<CreatePageProps> = ({
   );
 
   const handleUpdateKingdom = useCallback(
-    (id: string, updates: Partial<{ name: string; color: string; ruler: string }>) => {
+    (id: string, updates: Partial<{ name: string; color: string; ruler: string; artworkUrl?: string }>) => {
       const updatedKingdoms = currentMap.kingdoms.map((k) => (k.id === id ? { ...k, ...updates } : k));
       pushState({ ...currentMap, kingdoms: updatedKingdoms });
     },
@@ -640,7 +647,7 @@ export const CreatePage: React.FC<CreatePageProps> = ({
   );
 
   const handleUpdateLabel = useCallback(
-    (id: string, updates: Partial<{ text: string; fontSize: number; rotation: number }>) => {
+    (id: string, updates: Partial<{ text: string; fontSize: number; rotation: number; artworkUrl?: string }>) => {
       const updatedLabels = currentMap.labels.map((l) => (l.id === id ? { ...l, ...updates } : l));
       pushState({ ...currentMap, labels: updatedLabels });
     },
@@ -648,11 +655,61 @@ export const CreatePage: React.FC<CreatePageProps> = ({
   );
 
   const handleUpdatePOI = useCallback(
-    (id: string, updates: Partial<{ name: string; description: string }>) => {
+    (id: string, updates: Partial<{ name: string; description: string; type?: any; artworkUrl?: string }>) => {
       const updatedPOIs = currentMap.pointsOfInterest.map((p) => (p.id === id ? { ...p, ...updates } : p));
       pushState({ ...currentMap, pointsOfInterest: updatedPOIs });
     },
     [currentMap, pushState]
+  );
+
+  // Attach AI Image Studio Artwork to Map or Selected Object
+  const handleAttachArtworkAsset = useCallback(
+    async (asset: any) => {
+      setShowImageAssetPicker(false);
+
+      if (selectedObject) {
+        const { type, id } = selectedObject;
+        if (type === 'city') {
+          handleUpdateCity(id, { artworkUrl: asset.url });
+        } else if (type === 'poi') {
+          handleUpdatePOI(id, { artworkUrl: asset.url });
+        } else if (type === 'kingdom') {
+          handleUpdateKingdom(id, { artworkUrl: asset.url });
+        } else if (type === 'label') {
+          handleUpdateLabel(id, { artworkUrl: asset.url });
+        }
+      }
+
+      // Add to map userArtworks overlay list so artwork image is rendered directly on map canvas
+      const newOverlay = {
+        id: `art_${Date.now().toString(36)}`,
+        url: asset.url,
+        name: asset.name || asset.prompt || 'AI Artwork',
+        x: selectedObject ? 500 : 600,
+        y: selectedObject ? 350 : 400,
+        width: 180,
+        height: 135
+      };
+
+      const currentArtworks = currentMap.userArtworks || [];
+      pushState({
+        ...currentMap,
+        userArtworks: [...currentArtworks, newOverlay]
+      });
+
+      setSelectedObject({ type: 'user_artwork', id: newOverlay.id });
+      setRightPanelTab('properties');
+
+      await ImageStudioService.attachAssetToEntity(
+        asset.id,
+        asset.userId || 'user_current',
+        'map',
+        currentMap.id,
+        currentMap.name,
+        'artwork'
+      );
+    },
+    [selectedObject, handleUpdateCity, handleUpdatePOI, handleUpdateKingdom, handleUpdateLabel, currentMap, pushState]
   );
 
   // Rename Map Title
@@ -896,6 +953,7 @@ export const CreatePage: React.FC<CreatePageProps> = ({
                     onUpdateLabel={handleUpdateLabel}
                     onUpdatePOI={handleUpdatePOI}
                     onDeleteSelected={handleDeleteSelected}
+                    onOpenImageStudioPicker={() => setShowImageAssetPicker(true)}
                   />
                 )}
               </div>
@@ -1148,10 +1206,7 @@ export const CreatePage: React.FC<CreatePageProps> = ({
           entityType="map"
           entityId={currentMap.id}
           entityName={currentMap.name}
-          onSelectAsset={(asset) => {
-            alert(`Selected Artwork Asset "${asset.prompt || asset.id}" from Image Studio for Map!`);
-            setShowImageAssetPicker(false);
-          }}
+          onSelectAsset={handleAttachArtworkAsset}
           onClose={() => setShowImageAssetPicker(false)}
         />
       )}

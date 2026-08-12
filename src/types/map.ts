@@ -27,6 +27,18 @@ export type MapType =
   | 'egypt';
 export type MapStyle = 'parchment' | 'dark-fantasy' | 'clean' | 'hand-drawn' | 'rpg';
 
+export interface UserArtworkOverlay {
+  id: string;
+  url: string;
+  name?: string;
+  x: number;
+  y: number;
+  width: number;
+  height: number;
+  rotation?: number;
+  opacity?: number;
+}
+
 export interface Position {
   x: number;
   y: number;
@@ -45,6 +57,7 @@ export interface Settlement {
   kingdomId?: string;
   worldCityId?: string;
   description?: string;
+  artworkUrl?: string;
 }
 
 export interface MapKingdom {
@@ -56,6 +69,7 @@ export interface MapKingdom {
   description?: string;
   center?: Position;
   borderPath?: string;
+  artworkUrl?: string;
 }
 
 export interface MapLabel {
@@ -73,6 +87,7 @@ export interface MapLabel {
   opacity?: number;
   category?: string;
   stylePreset?: 'region' | 'kingdom' | 'city' | 'river' | 'mountain' | 'ocean';
+  artworkUrl?: string;
 }
 
 export interface PointOfInterest {
@@ -83,6 +98,7 @@ export interface PointOfInterest {
   y: number;
   worldLocationId?: string;
   description?: string;
+  artworkUrl?: string;
 }
 
 export interface RiverPath {
@@ -180,6 +196,7 @@ export interface FantasyMap {
   kingdoms: MapKingdom[];
   labels: MapLabel[];
   pointsOfInterest: PointOfInterest[];
+  userArtworks?: UserArtworkOverlay[];
 
   // Cartography Ornaments & Layout
   compassPosition?: Position;

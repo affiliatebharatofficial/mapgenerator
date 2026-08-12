@@ -813,7 +813,36 @@ export const MapCanvas: React.FC<MapCanvasProps> = ({
               );
             })}
 
-          {/* 13. PRIVATE GM SECRET LAYER (Never rendered in export or preview) */}
+          {/* 13. USER ARTWORK OVERLAYS FROM AI IMAGE STUDIO */}
+          {map.userArtworks?.map((art) => {
+            const isSelected = selectedObject?.type === 'user_artwork' && selectedObject.id === art.id;
+            const w = art.width || 160;
+            const h = art.height || 120;
+
+            return (
+              <g
+                key={`art_${art.id}`}
+                transform={`translate(${art.x}, ${art.y}) rotate(${art.rotation || 0})`}
+                onClick={(e) => {
+                  e.stopPropagation();
+                  onSelectObject({ type: 'user_artwork', id: art.id });
+                }}
+                onMouseDown={(e) => {
+                  e.stopPropagation();
+                  setDraggingObj({ type: 'user_artwork', id: art.id });
+                }}
+                className="cursor-pointer group"
+              >
+                <rect x={-w / 2 - 4} y={-h / 2 - 4} width={w + 8} height={h + 8} fill={isDark ? '#0f172a' : '#fef3c7'} stroke="#d4af37" strokeWidth={1.5} rx={6} />
+                <image href={art.url} x={-w / 2} y={-h / 2} width={w} height={h} preserveAspectRatio="xMidYMid slice" />
+                {isSelected && !isPreviewMode && (
+                  <rect x={-w / 2 - 6} y={-h / 2 - 6} width={w + 12} height={h + 12} fill="none" stroke="#38bdf8" strokeWidth={2} strokeDasharray="3,3" rx={8} />
+                )}
+              </g>
+            );
+          })}
+
+          {/* 14. PRIVATE GM SECRET LAYER (Never rendered in export or preview) */}
           {layers.private_gm && !isPreviewMode && (
             <g id="layer-private-gm" opacity={opacities['private_gm'] ? opacities['private_gm'] / 100 : 1}>
               {map.pointsOfInterest?.filter((p: any) => p.isSecret || p.type === 'dungeon').map((p: any) => (
