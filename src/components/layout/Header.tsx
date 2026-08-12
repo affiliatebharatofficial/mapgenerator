@@ -50,49 +50,49 @@ export const Header: React.FC<HeaderProps> = ({
 
   return (
     <header className="sticky top-0 z-50 bg-[#0b0d11]/90 backdrop-blur-md border-b border-amber-500/15 transition-all">
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-20 flex items-center justify-between">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-20 flex items-center justify-between gap-2">
         {/* Brand Logo */}
         <button
           onClick={onNavigateHome}
-          className="flex items-center gap-3 group focus:outline-none"
+          className="flex items-center gap-2.5 group focus:outline-none shrink-0"
         >
-          <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-amber-400 to-amber-600 p-0.5 shadow-lg shadow-amber-500/20 group-hover:scale-105 transition-transform">
+          <div className="w-9 h-9 sm:w-10 sm:h-10 rounded-xl bg-gradient-to-br from-amber-400 to-amber-600 p-0.5 shadow-lg shadow-amber-500/20 group-hover:scale-105 transition-transform">
             <div className="w-full h-full bg-[#0b0d11] rounded-[10px] flex items-center justify-center">
-              <Compass className="w-6 h-6 text-amber-400 group-hover:rotate-45 transition-transform duration-500" />
+              <Compass className="w-5 h-5 sm:w-6 sm:h-6 text-amber-400 group-hover:rotate-45 transition-transform duration-500" />
             </div>
           </div>
           <div className="flex flex-col text-left">
-            <span className="font-cinzel font-bold text-lg sm:text-xl tracking-wider text-slate-100 group-hover:text-amber-300 transition-colors">
+            <span className="font-cinzel font-bold text-base sm:text-lg tracking-wider text-slate-100 group-hover:text-amber-300 transition-colors whitespace-nowrap">
               CreateFantasyMap
             </span>
-            <span className="text-[10px] text-amber-400/80 font-mono tracking-widest uppercase">
+            <span className="text-[9px] sm:text-[10px] text-amber-400/80 font-mono tracking-widest uppercase whitespace-nowrap">
               Cartography AI
             </span>
           </div>
         </button>
 
         {/* Desktop Navigation Links */}
-        <nav className="hidden md:flex items-center gap-6 text-sm font-medium text-slate-300">
+        <nav className="hidden lg:flex items-center gap-3.5 xl:gap-4 text-xs font-semibold text-slate-300">
           <button
             onClick={onNavigateCreate}
-            className="hover:text-amber-400 transition-colors flex items-center gap-1.5"
+            className="hover:text-amber-400 transition-colors flex items-center gap-1.5 whitespace-nowrap"
           >
-            <Sparkles className="w-4 h-4 text-amber-400" />
+            <Sparkles className="w-3.5 h-3.5 text-amber-400" />
             <span>Create Map</span>
           </button>
 
           <button
             onClick={() => (window.location.pathname = '/explore')}
-            className="hover:text-amber-400 transition-colors flex items-center gap-1.5"
+            className="hover:text-amber-400 transition-colors flex items-center gap-1.5 whitespace-nowrap"
           >
-            <Compass className="w-4 h-4 text-sky-400" />
+            <Compass className="w-3.5 h-3.5 text-sky-400" />
             <span>Explore</span>
           </button>
 
           {isAuthenticated && (
             <button
               onClick={() => (window.location.pathname = '/feed')}
-              className="hover:text-amber-400 transition-colors"
+              className="hover:text-amber-400 transition-colors whitespace-nowrap"
             >
               Feed
             </button>
@@ -101,9 +101,9 @@ export const Header: React.FC<HeaderProps> = ({
           {isAuthenticated && (
             <button
               onClick={() => (onNavigateWorlds ? onNavigateWorlds() : (window.location.pathname = '/worlds'))}
-              className="hover:text-amber-400 transition-colors flex items-center gap-1.5 text-amber-300 font-semibold"
+              className="hover:text-amber-400 transition-colors flex items-center gap-1.5 text-amber-300 whitespace-nowrap"
             >
-              <Globe className="w-4 h-4" />
+              <Globe className="w-3.5 h-3.5 text-amber-400" />
               <span>Worlds</span>
             </button>
           )}
@@ -111,9 +111,9 @@ export const Header: React.FC<HeaderProps> = ({
           {isAuthenticated && (
             <button
               onClick={() => (window.location.pathname = '/campaigns')}
-              className="hover:text-amber-400 transition-colors flex items-center gap-1.5 text-amber-400 font-semibold"
+              className="hover:text-amber-400 transition-colors flex items-center gap-1.5 text-amber-400 whitespace-nowrap"
             >
-              <Shield className="w-4 h-4" />
+              <Shield className="w-3.5 h-3.5" />
               <span>Campaigns</span>
             </button>
           )}
@@ -121,9 +121,9 @@ export const Header: React.FC<HeaderProps> = ({
           {isAuthenticated && (
             <button
               onClick={() => (window.location.pathname = '/image-studio')}
-              className="hover:text-amber-400 transition-colors flex items-center gap-1.5 text-amber-300 font-semibold"
+              className="hover:text-amber-400 transition-colors flex items-center gap-1.5 text-amber-300 whitespace-nowrap"
             >
-              <ImageIcon className="w-4 h-4 text-amber-400" />
+              <ImageIcon className="w-3.5 h-3.5 text-amber-400" />
               <span>Image Studio</span>
             </button>
           )}
@@ -131,23 +131,23 @@ export const Header: React.FC<HeaderProps> = ({
           {isAuthenticated && (
             <button
               onClick={() => (window.location.pathname = '/export')}
-              className="hover:text-amber-400 transition-colors flex items-center gap-1.5 text-amber-300 font-semibold"
+              className="hover:text-amber-400 transition-colors flex items-center gap-1.5 text-amber-300 whitespace-nowrap"
             >
-              <BookOpen className="w-4 h-4 text-amber-400" />
+              <BookOpen className="w-3.5 h-3.5 text-amber-400" />
               <span>Export Studio</span>
             </button>
           )}
 
           <button
             onClick={() => (onNavigateGallery ? onNavigateGallery() : scrollToSection('gallery'))}
-            className="hover:text-amber-400 transition-colors"
+            className="hover:text-amber-400 transition-colors whitespace-nowrap"
           >
             Gallery
           </button>
 
           <button
             onClick={() => (onNavigatePricing ? onNavigatePricing() : (window.location.pathname = '/pricing'))}
-            className="hover:text-amber-400 transition-colors"
+            className="hover:text-amber-400 transition-colors whitespace-nowrap"
           >
             Pricing
           </button>
@@ -155,43 +155,45 @@ export const Header: React.FC<HeaderProps> = ({
           {isAuthenticated && (
             <button
               onClick={onNavigateDashboard}
-              className="hover:text-amber-400 transition-colors flex items-center gap-1.5 text-amber-300 font-semibold"
+              className="hover:text-amber-400 transition-colors flex items-center gap-1.5 text-amber-300 whitespace-nowrap"
             >
-              <LayoutDashboard className="w-4 h-4" />
+              <LayoutDashboard className="w-3.5 h-3.5 text-amber-400" />
               <span>My Maps</span>
             </button>
           )}
         </nav>
 
         {/* Desktop Right Action CTAs */}
-        <div className="hidden md:flex items-center gap-4">
+        <div className="hidden lg:flex items-center gap-3 shrink-0">
           {isAuthenticated ? (
             <div className="relative">
               <button
                 onClick={() => setUserDropdownOpen(!userDropdownOpen)}
-                className="flex items-center gap-2.5 p-1.5 rounded-xl border border-amber-500/30 hover:border-amber-400 bg-slate-900/80 transition-all"
+                className="flex items-center gap-2 p-1.5 rounded-xl border border-amber-500/30 hover:border-amber-400 bg-slate-900/80 transition-all max-w-[180px]"
               >
                 <img
                   src={profile?.avatar_url || `https://api.dicebear.com/7.x/bottts/svg?seed=${profile?.username || 'user'}`}
                   alt={profile?.display_name}
-                  className="w-8 h-8 rounded-lg border border-amber-500/40 bg-slate-950"
+                  className="w-7 h-7 rounded-lg border border-amber-500/40 bg-slate-950 shrink-0"
                 />
-                <div className="text-left pr-1">
-                  <span className="text-xs font-bold text-amber-200 block">{profile?.display_name || user?.email}</span>
-                  <span className="text-[9px] font-bold font-mono px-1.5 py-0.2 rounded bg-amber-500/20 text-amber-300 uppercase">
+                <div className="text-left pr-1 min-w-0 flex-1">
+                  <span className="text-xs font-bold text-amber-200 block truncate max-w-[90px]" title={profile?.display_name || user?.email || ''}>
+                    {profile?.display_name || user?.email}
+                  </span>
+                  <span className="text-[8px] font-bold font-mono px-1 py-0.2 rounded bg-amber-500/20 text-amber-300 uppercase inline-block leading-tight">
                     {currentPlan}
                   </span>
                 </div>
               </button>
 
               {userDropdownOpen && (
-                <div className="absolute right-0 mt-2 w-56 bg-[#121620] border border-amber-500/30 rounded-xl p-2 shadow-2xl space-y-1 animate-in fade-in duration-150">
+                <div className="absolute right-0 mt-2 w-56 bg-[#121620] border border-amber-500/30 rounded-xl p-2 shadow-2xl space-y-1 animate-in fade-in duration-150 z-50">
                   <div className="px-3 py-2 border-b border-slate-800 flex justify-between items-center">
-                    <div>
-                      <p className="text-xs font-bold text-slate-100">{profile?.display_name}</p>
-                      <p className="text-[10px] font-mono text-amber-400">@{profile?.username}</p>
+                    <div className="min-w-0 pr-2">
+                      <p className="text-xs font-bold text-slate-100 truncate">{profile?.display_name || user?.email}</p>
+                      <p className="text-[10px] font-mono text-amber-400 truncate">@{profile?.username || 'user'}</p>
                     </div>
-                    <span className="text-[9px] font-bold px-2 py-0.5 rounded bg-amber-500/20 text-amber-300 border border-amber-500/30 uppercase">
+                    <span className="text-[9px] font-bold px-2 py-0.5 rounded bg-amber-500/20 text-amber-300 border border-amber-500/30 uppercase shrink-0">
                       {currentPlan}
                     </span>
                   </div>
@@ -280,7 +282,7 @@ export const Header: React.FC<HeaderProps> = ({
                   if (onNavigateLogin) onNavigateLogin();
                   else window.location.pathname = '/login';
                 }}
-                className="px-4 py-2 text-xs font-semibold text-slate-300 hover:text-amber-300 transition-colors"
+                className="px-3.5 py-2 text-xs font-semibold text-slate-300 hover:text-amber-300 transition-colors whitespace-nowrap"
               >
                 Sign In
               </button>
@@ -289,13 +291,13 @@ export const Header: React.FC<HeaderProps> = ({
                   if (onNavigateSignup) onNavigateSignup();
                   else window.location.pathname = '/signup';
                 }}
-                className="px-4 py-2 text-xs font-semibold bg-amber-500/10 hover:bg-amber-500/20 text-amber-300 border border-amber-500/30 rounded-xl transition-colors"
+                className="px-3.5 py-2 text-xs font-semibold bg-amber-500/10 hover:bg-amber-500/20 text-amber-300 border border-amber-500/30 rounded-xl transition-colors whitespace-nowrap"
               >
                 Sign Up
               </button>
               <button
                 onClick={onNavigateCreate}
-                className="px-5 py-2.5 bg-gradient-to-r from-amber-500 to-amber-600 hover:from-amber-400 hover:to-amber-500 text-slate-950 font-bold text-xs sm:text-sm rounded-xl transition-all shadow-lg shadow-amber-500/20 flex items-center gap-2"
+                className="px-4 py-2.5 bg-gradient-to-r from-amber-500 to-amber-600 hover:from-amber-400 hover:to-amber-500 text-slate-950 font-bold text-xs sm:text-sm rounded-xl transition-all shadow-lg shadow-amber-500/20 flex items-center gap-2 whitespace-nowrap"
               >
                 <Sparkles className="w-4 h-4" />
                 <span>Create a Map</span>
@@ -307,7 +309,7 @@ export const Header: React.FC<HeaderProps> = ({
         {/* Mobile Menu Button */}
         <button
           onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
-          className="md:hidden p-2 text-slate-300 hover:text-amber-400 rounded-lg"
+          className="lg:hidden p-2 text-slate-300 hover:text-amber-400 rounded-lg"
           aria-label="Toggle Navigation Menu"
         >
           {mobileMenuOpen ? <X className="w-6 h-6" /> : <Menu className="w-6 h-6" />}
@@ -316,7 +318,7 @@ export const Header: React.FC<HeaderProps> = ({
 
       {/* Mobile Navigation Drawer */}
       {mobileMenuOpen && (
-        <div className="md:hidden bg-[#0e1118] border-b border-amber-500/20 px-4 py-6 space-y-4 animate-in slide-in-from-top duration-200">
+        <div className="lg:hidden bg-[#0e1118] border-b border-amber-500/20 px-4 py-6 space-y-4 animate-in slide-in-from-top duration-200">
           <nav className="flex flex-col gap-3 text-sm font-semibold text-slate-200">
             <button
               onClick={onNavigateCreate}
