@@ -11,28 +11,44 @@ export const FAQSection: React.FC = () => {
 
   const faqs: FAQItem[] = [
     {
-      question: 'What is Create Fantasy Map?',
-      answer: 'Create Fantasy Map (createfantasymap.com) is an AI & procedural fantasy worldbuilding cartography platform. It allows fantasy writers, Dungeons & Dragons players, Dungeon Masters, and RPG creators to instantly generate and customize high-quality fantasy world maps.'
+      question: 'What is a fantasy map generator?',
+      answer: 'A fantasy map generator is a digital tool that proceduralizes or uses AI to generate custom fantasy world maps with continents, mountain ranges, forests, rivers, kingdoms, cities, roads, and points of interest.'
     },
     {
-      question: 'Can I customize my fantasy map after generation?',
-      answer: 'Yes! Unlike flat static AI image generators, Create Fantasy Map produces fully interactive vector objects. You can drag and reposition cities, edit kingdom borders, modify landmark lore, change font sizes, toggle layers, and customize visual styles.'
+      question: 'Can I create a fantasy map for free?',
+      answer: 'Yes! CreateFantasyMap is currently available in Free Launch Mode. You can generate, customize, and export fantasy maps for free during our launch.'
     },
     {
-      question: 'Can I create maps for D&D and tabletop RPG campaigns?',
-      answer: 'Absolutely. We include a specialized "RPG / D&D Inspired" tabletop style with grid overlays, legend markers, distance scale bars, and points of interest (dungeons, castles, dragon lairs, battlefields) specifically tailored for Dungeon Masters.'
+      question: 'Can I use CreateFantasyMap for D&D?',
+      answer: 'Yes, CreateFantasyMap is designed for D&D Dungeon Masters and players to generate world, continent, and regional campaign maps with grid overlays, distance scales, and points of interest.'
     },
     {
-      question: 'Can I download and export my map?',
-      answer: 'Yes, Phase 1 includes free high-resolution PNG image export. You can export your customized map with visible grid overlays, legends, scale bars, and decorative frames ready for printing or VTT integration.'
+      question: 'Can I create a fantasy world map?',
+      answer: 'Yes. You can generate continents, island realms, archipelagos, regional maps, and kingdoms.'
     },
     {
-      question: 'Will AI text-to-world generation be available?',
-      answer: 'Yes! In upcoming roadmap phases, our server-side AI World Parser will allow you to type complex natural language descriptions (e.g., "A cold northern continent with three kingdoms and a ruined coastal castle") and convert them into structured editable map parameters.'
+      question: 'Can I customize generated maps?',
+      answer: 'Yes! CreateFantasyMap includes an interactive cartography canvas where you can move cities, paint custom terrain, draw rivers and roads, edit labels, adjust colors, and toggle visibility layers.'
     },
     {
-      question: 'Do I need to create an account or pay to build a map?',
-      answer: 'No! You can generate, customize, and save maps locally in your browser immediately without signing up. Authentication and cloud saving will be introduced in future updates.'
+      question: 'Can I add cities and locations?',
+      answer: 'Yes, you can place capitals, major cities, towns, villages, ports, fortresses, ruins, dungeons, dragon lairs, and custom points of interest.'
+    },
+    {
+      question: 'Can I download my fantasy map?',
+      answer: 'Yes, you can export your finished fantasy map as a high-resolution image ready for printing, worldbuilding documentation, or digital display.'
+    },
+    {
+      question: 'Do I need an account?',
+      answer: 'You can start generating and editing maps right in your browser immediately. Creating a free account allows you to save your maps to the cloud.'
+    },
+    {
+      question: 'Can I generate fantasy artwork?',
+      answer: 'Yes, CreateFantasyMap features integrated AI worldbuilding tools to generate lore descriptions, character profiles, kingdom histories, and fantasy artwork.'
+    },
+    {
+      question: 'Is CreateFantasyMap free?',
+      answer: 'CreateFantasyMap is currently free to use during our launch period.'
     }
   ];
 
@@ -45,7 +61,7 @@ export const FAQSection: React.FC = () => {
             <span>Frequently Asked Questions</span>
           </div>
           <h2 className="font-cinzel font-bold text-3xl sm:text-4xl text-slate-100">
-            Got <span className="gold-gradient-text">Questions?</span>
+            Frequently Asked <span className="gold-gradient-text">Questions</span>
           </h2>
           <p className="text-sm text-slate-400">
             Everything you need to know about creating fantasy maps with our platform.
