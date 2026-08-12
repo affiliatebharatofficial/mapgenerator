@@ -1,13 +1,16 @@
-import React, { useState } from 'react';
+import React, { useState, useMemo } from 'react';
 import type {
   FantasyMap,
   MapLayers,
   SelectedObjectRef,
-  Position
+  Position,
+  MapKingdom,
+  Settlement,
+  PointOfInterest
 } from '../../types/map';
 import { MAP_STYLES } from '../../lib/map-engine/styles';
+import { getVectorIconPath } from '../../lib/map-engine/iconLibrary';
 import type { ActiveTool, TerrainBrushType } from '../../types/editorTools';
-
 import type { CartographicThemeConfig } from '../../types/cartography';
 
 interface MapCanvasProps {
@@ -35,6 +38,27 @@ interface MapCanvasProps {
   onMouseUp: (e: React.MouseEvent) => void;
   svgRef: React.RefObject<SVGSVGElement | null>;
   isPreviewMode?: boolean;
+}
+
+// Pseudo-random helper based on seed to ensure 100% deterministic rendering
+function getDeterministicRandom(seed: number, index: number) {
+  const x = Math.sin(seed * 9999 + index * 1337) * 10000;
+  return x - Math.floor(x);
+}
+
+// Helper to convert point sequence to smooth Bezier curve string
+function getSmoothBezierPath(pts: Position[]): string {
+  if (pts.length < 2) return '';
+  if (pts.length === 2) return `M ${pts[0].x} ${pts[0].y} L ${pts[1].x} ${pts[1].y}`;
+
+  let path = `M ${pts[0].x} ${pts[0].y}`;
+  for (let i = 1; i < pts.length - 1; i++) {
+    const xc = (pts[i].x + pts[i + 1].x) / 2;
+    const yc = (pts[i].y + pts[i + 1].y) / 2;
+    path += ` Q ${pts[i].x} ${pts[i].y}, ${xc} ${yc}`;
+  }
+  path += ` L ${pts[pts.length - 1].x} ${pts[pts.length - 1].y}`;
+  return path;
 }
 
 export const MapCanvas: React.FC<MapCanvasProps> = ({
@@ -66,7 +90,9 @@ export const MapCanvas: React.FC<MapCanvasProps> = ({
     forestColor: cartographyTheme?.forestColor || baseStyle.forestColor,
     textColor: cartographyTheme?.textColor || baseStyle.textColor,
     fontFamily: cartographyTheme?.fontCategory || baseStyle.fontFamily,
-    borderColor: cartographyTheme?.borderColor || baseStyle.borderColor
+    borderColor: cartographyTheme?.borderColor || baseStyle.borderColor,
+    roadColor: baseStyle.roadColor || '#6b5b45',
+    textHaloColor: baseStyle.textHaloColor || '#f4ebd0'
   };
   const isDark = map.style === 'dark-fantasy' || cartographyTheme?.id === 'dark-fantasy';
 
@@ -120,11 +146,44 @@ export const MapCanvas: React.FC<MapCanvasProps> = ({
     onMouseUp(e);
   };
 
+  // Pre-calculate deterministic tree scatter for forest clusters to avoid random re-renders
+  const forestTrees = useMemo(() => {
+    if (!map.forests) return [];
+    return map.forests.map((f, fIdx) => {
+      const radius = f.radius || 25;
+      const treeCount = Math.min(18, Math.max(8, Math.floor(radius / 2.5)));
+      const trees = [];
+
+      for (let tIdx = 0; tIdx < treeCount; tIdx++) {
+        const r1 = getDeterministicRandom(map.seed, fIdx * 100 + tIdx * 2);
+        const r2 = getDeterministicRandom(map.seed, fIdx * 100 + tIdx * 2 + 1);
+        const angle = r1 * Math.PI * 2;
+        const dist = Math.sqrt(r2) * (radius * 0.75);
+        const tx = Math.cos(angle) * dist;
+        const ty = Math.sin(angle) * dist;
+        const scale = 0.6 + getDeterministicRandom(map.seed, fIdx * 50 + tIdx) * 0.5;
+        trees.push({ tx, ty, scale });
+      }
+      return { forest: f, trees };
+    });
+  }, [map.forests, map.seed]);
+
+  // Compute Mountain Range center for label rendering
+  const mountainRangeLabel = useMemo(() => {
+    if (!map.mountains || map.mountains.length < 3) return null;
+    let sumX = 0;
+    let sumY = 0;
+    map.mountains.forEach((m) => {
+      sumX += m.x;
+      sumY += m.y;
+    });
+    const avgX = sumX / map.mountains.length;
+    const avgY = sumY / map.mountains.length;
+    return { x: avgX, y: avgY - 28, text: 'DRAGONSPINE MOUNTAINS' };
+  }, [map.mountains]);
+
   return (
-    <div
-      className="w-full h-full relative overflow-hidden bg-[#090b0e] cursor-crosshair select-none"
-      onWheel={undefined}
-    >
+    <div className="w-full h-full relative overflow-hidden bg-[#090b0e] cursor-crosshair select-none">
       <svg
         ref={svgRef}
         viewBox={`0 0 ${map.width} ${map.height}`}
@@ -138,101 +197,287 @@ export const MapCanvas: React.FC<MapCanvasProps> = ({
           <pattern id="grid-pattern" width="40" height="40" patternUnits="userSpaceOnUse">
             <path d="M 40 0 L 0 0 0 40" fill="none" stroke={isDark ? '#334155' : '#d1d5db'} strokeWidth="0.5" opacity="0.4" />
           </pattern>
+
+          {/* Vignette Gradient overlay */}
+          <radialGradient id="vignette-grad" cx="50%" cy="50%" r="70%">
+            <stop offset="60%" stopColor="#000" stopOpacity="0" />
+            <stop offset="100%" stopColor="#000" stopOpacity={isDark ? '0.6' : '0.2'} />
+          </radialGradient>
         </defs>
 
         {/* Scaled & Panned Group Container */}
         <g transform={`translate(${transform.x}, ${transform.y}) scale(${transform.k})`}>
-          {/* 1. Water Background Layer */}
+          
+          {/* 1. OCEAN WATER BACKGROUND */}
           <rect width={map.width} height={map.height} fill={styleConfig.waterColor} />
 
-          {/* 2. Coastline & Landmass Layer */}
+          {/* 1b. COASTAL WATER RIPPLES (Concentric Cartographic Echo Rings) */}
           {layers.terrain && (
-            <path
-              d={map.coastline}
-              fill={styleConfig.landColor}
-              stroke={styleConfig.coastColor}
-              strokeWidth={3}
-              className="transition-colors duration-300"
-            />
+            <g id="coastal-hatching-rings" pointerEvents="none">
+              <path d={map.coastline} fill="none" stroke={styleConfig.coastColor} strokeWidth={8} opacity={0.25} />
+              <path d={map.coastline} fill="none" stroke={styleConfig.coastColor} strokeWidth={5} opacity={0.35} />
+              <path d={map.coastline} fill="none" stroke={styleConfig.coastColor} strokeWidth={2.5} opacity={0.5} />
+              {map.islandPaths?.map((ip, idx) => (
+                <g key={`island_ring_${idx}`}>
+                  <path d={ip} fill="none" stroke={styleConfig.coastColor} strokeWidth={6} opacity={0.25} />
+                  <path d={ip} fill="none" stroke={styleConfig.coastColor} strokeWidth={2.5} opacity={0.45} />
+                </g>
+              ))}
+            </g>
           )}
 
-          {/* 3. Custom Painted Terrain Cells */}
+          {/* 2. LANDMASS LAYER */}
+          {layers.terrain && (
+            <g id="landmass-layer">
+              <path
+                d={map.coastline}
+                fill={styleConfig.landColor}
+                stroke={styleConfig.coastColor}
+                strokeWidth={2}
+                className="transition-colors duration-300"
+              />
+              {map.islandPaths?.map((ip, idx) => (
+                <path
+                  key={`island_${idx}`}
+                  d={ip}
+                  fill={styleConfig.landColor}
+                  stroke={styleConfig.coastColor}
+                  strokeWidth={1.8}
+                />
+              ))}
+            </g>
+          )}
+
+          {/* 3. CUSTOM PAINTED TERRAIN CELLS */}
           {map.terrainCells?.map((cell, idx) => (
             <circle
-              key={idx}
+              key={`cell_${idx}`}
               cx={cell.x}
               cy={cell.y}
-              r={15}
+              r={16}
               fill={
                 cell.type === 'desert'
                   ? '#f39c12'
                   : cell.type === 'snow'
-                  ? '#ecf0f1'
+                  ? '#f1f5f9'
                   : cell.type === 'swamp'
                   ? '#16a085'
                   : cell.type === 'volcanic'
                   ? '#c0392b'
                   : '#27ae60'
               }
-              opacity={0.5}
+              opacity={0.35}
             />
           ))}
 
-          {/* 4. Polygon Region & Kingdom Borders */}
+          {/* 4. POLITICAL REGIONS & KINGDOM BORDERS */}
           {layers.kingdoms &&
-            map.kingdomBorders?.map((kb) => (
-              <polygon
-                key={kb.id}
-                points={kb.points.map((p) => `${p.x},${p.y}`).join(' ')}
-                fill={kb.color}
-                fillOpacity={kb.opacity || 0.25}
-                stroke={kb.color}
-                strokeWidth={2}
-                strokeDasharray="6,4"
-              />
-            ))}
+            map.kingdoms?.map((k: MapKingdom) => {
+              if (!k.borderPath) return null;
+              return (
+                <g key={`kingdom_${k.id}`}>
+                  {/* Soft parchment tinted fill */}
+                  <path
+                    d={k.borderPath}
+                    fill={k.color || styleConfig.borderColor}
+                    fillOpacity={0.18}
+                    stroke={k.color || styleConfig.borderColor}
+                    strokeWidth={2}
+                    strokeDasharray="6,4"
+                  />
+                  {/* Kingdom Region Title Label */}
+                  {k.center && (
+                    <g transform={`translate(${k.center.x}, ${k.center.y})`} pointerEvents="none">
+                      <text
+                        textAnchor="middle"
+                        stroke={styleConfig.textHaloColor}
+                        strokeWidth={4}
+                        strokeLinejoin="round"
+                        fill={styleConfig.textColor}
+                        fontSize={15}
+                        fontWeight="bold"
+                        fontFamily="Cinzel, serif"
+                        letterSpacing="2"
+                        opacity={0.85}
+                      >
+                        {k.name.toUpperCase()}
+                      </text>
+                      <text
+                        textAnchor="middle"
+                        fill={styleConfig.textColor}
+                        fontSize={15}
+                        fontWeight="bold"
+                        fontFamily="Cinzel, serif"
+                        letterSpacing="2"
+                        opacity={0.85}
+                      >
+                        {k.name.toUpperCase()}
+                      </text>
+                    </g>
+                  )}
+                </g>
+              );
+            })}
 
-          {/* 5. Rivers */}
-          {layers.rivers &&
-            map.rivers.map((r) => {
-              const pts = r.points || r.path || [];
-              if (pts.length < 2) return null;
-              const pathData = pts.reduce((acc, p, i) => (i === 0 ? `M ${p.x} ${p.y}` : `${acc} L ${p.x} ${p.y}`), '');
+          {/* 5. LAKES */}
+          {layers.lakes !== false &&
+            map.lakes?.map((l, idx) => {
+              const lakePathData = getSmoothBezierPath(l.points);
               return (
                 <path
-                  key={r.id}
-                  d={pathData}
-                  fill="none"
-                  stroke={styleConfig.waterColor}
-                  strokeWidth={r.width || 4}
-                  strokeLinecap="round"
+                  key={`lake_${l.id || idx}`}
+                  d={lakePathData}
+                  fill={styleConfig.waterColor}
+                  stroke={styleConfig.coastColor}
+                  strokeWidth={1.5}
                 />
               );
             })}
 
-          {/* 6. Roads */}
+          {/* 6. RIVERS (Organic Winding Bezier Paths & Tapering Width) */}
+          {layers.rivers &&
+            map.rivers?.map((r) => {
+              const pts = r.points || r.path || [];
+              if (pts.length < 2) return null;
+              const bezierPath = getSmoothBezierPath(pts);
+              const mainWidth = r.width || 3.5;
+
+              // Midpoint calculation for river italic label
+              const midIdx = Math.floor(pts.length / 2);
+              const midPt = pts[midIdx] || pts[0];
+
+              return (
+                <g key={`river_${r.id}`}>
+                  {/* Outer estuary glow */}
+                  <path
+                    d={bezierPath}
+                    fill="none"
+                    stroke={styleConfig.coastColor}
+                    strokeWidth={mainWidth + 1.5}
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    opacity={0.4}
+                  />
+                  {/* Main tapering river path */}
+                  <path
+                    d={bezierPath}
+                    fill="none"
+                    stroke={styleConfig.waterColor}
+                    strokeWidth={mainWidth}
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                  />
+                  {/* River Italic Name Label */}
+                  {r.name && (
+                    <g transform={`translate(${midPt.x}, ${midPt.y})`} pointerEvents="none">
+                      <text
+                        textAnchor="middle"
+                        stroke={styleConfig.textHaloColor}
+                        strokeWidth={3}
+                        fill={styleConfig.textColor}
+                        fontSize={10}
+                        fontStyle="italic"
+                        fontFamily="Cinzel, serif"
+                        opacity={0.85}
+                      >
+                        {r.name}
+                      </text>
+                      <text
+                        textAnchor="middle"
+                        fill={styleConfig.textColor}
+                        fontSize={10}
+                        fontStyle="italic"
+                        fontFamily="Cinzel, serif"
+                        opacity={0.85}
+                      >
+                        {r.name}
+                      </text>
+                    </g>
+                  )}
+                </g>
+              );
+            })}
+
+          {/* 7. ROADS (Hand-Drawn Warm Ink Lines with Hierarchy) */}
           {layers.roads &&
             map.roads?.map((rd) => {
               const pts = rd.points || rd.path || [];
               if (pts.length < 2) return null;
-              const pathData = pts.reduce((acc, p, i) => (i === 0 ? `M ${p.x} ${p.y}` : `${acc} L ${p.x} ${p.y}`), '');
+              const bezierPath = getSmoothBezierPath(pts);
+              const isMajor = rd.roadType === 'main' || rd.roadType === 'military';
+
               return (
                 <path
-                  key={rd.id}
-                  d={pathData}
+                  key={`road_${rd.id}`}
+                  d={bezierPath}
                   fill="none"
-                  stroke="#8e44ad"
-                  strokeWidth={rd.width || 2}
-                  strokeDasharray="4,4"
+                  stroke={styleConfig.roadColor}
+                  strokeWidth={isMajor ? 2.2 : 1.4}
+                  strokeDasharray={isMajor ? 'none' : '4,3'}
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  opacity={isMajor ? 0.85 : 0.65}
                 />
               );
             })}
 
-          {/* 7. Mountains */}
+          {/* 8. ILLUSTRATIVE FOREST CLUSTERS (Hand-Drawn Tree Groups) */}
+          {layers.forests &&
+            forestTrees.map(({ forest, trees }, fIdx) => {
+              const fId = forest.id || `f_${fIdx}`;
+              const isSelected = selectedObject?.type === 'forest' && selectedObject.id === fId;
+              const radius = forest.radius || 25;
+
+              return (
+                <g
+                  key={fId}
+                  transform={`translate(${forest.x}, ${forest.y})`}
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    onSelectObject({ type: 'forest', id: fId });
+                  }}
+                  onMouseDown={(e) => {
+                    e.stopPropagation();
+                    setDraggingObj({ type: 'forest', id: fId });
+                  }}
+                  className="cursor-pointer"
+                >
+                  {/* Organic woodland canopy background fill */}
+                  <circle r={radius} fill={styleConfig.forestColor} opacity={0.35} />
+
+                  {/* Scatter of detailed illustrated tree icons inside canopy */}
+                  {trees.map((t, tIdx) => (
+                    <g key={`tree_${tIdx}`} transform={`translate(${t.tx}, ${t.ty}) scale(${t.scale})`}>
+                      <path
+                        d="M0 -12 L-6 2 L-2 2 L-7 10 L-3 10 L-8 18 L8 18 L3 10 L7 10 L2 2 L6 2 Z M-1.5 18 L-1.5 22 L1.5 22 L1.5 18 Z"
+                        fill={styleConfig.forestColor}
+                        stroke={isDark ? '#022c22' : '#1b4332'}
+                        strokeWidth={0.8}
+                      />
+                    </g>
+                  ))}
+
+                  {/* Editor selection outline (ONLY in editor mode) */}
+                  {isSelected && !isPreviewMode && (
+                    <circle r={radius + 4} fill="none" stroke="#38bdf8" strokeWidth={2} strokeDasharray="3,3" />
+                  )}
+                </g>
+              );
+            })}
+
+          {/* 9. ORGANIC FANTASY MOUNTAIN RANGES */}
           {layers.mountains &&
-            map.mountains.map((m: any, idx) => {
+            map.mountains?.map((m: Position, idx: number) => {
               const mId = m.id || `m_${idx}`;
               const isSelected = selectedObject?.type === 'mountain' && selectedObject.id === mId;
+              const mainH = m.height || 24;
+              const mainW = mainH * 1.2;
+
+              // Deterministic variation for left/right foothill peaks
+              const rOffset = getDeterministicRandom(map.seed, idx * 3);
+              const subH1 = mainH * 0.65;
+              const subH2 = mainH * 0.55;
+
               return (
                 <g
                   key={mId}
@@ -245,55 +490,110 @@ export const MapCanvas: React.FC<MapCanvasProps> = ({
                     e.stopPropagation();
                     setDraggingObj({ type: 'mountain', id: mId });
                   }}
-                  onContextMenu={(e) => {
-                    e.preventDefault();
-                    if (onContextMenuAction) onContextMenuAction(e, { type: 'mountain', id: mId });
-                  }}
-                  className="cursor-pointer group"
+                  className="cursor-pointer"
                 >
-                  <polygon points="0,-18 -14,14 14,14" fill={styleConfig.mountainColor} stroke={styleConfig.textColor} strokeWidth={1.5} />
-                  <polygon points="0,-18 -6,0 0,-2" fill={isDark ? '#e2e8f0' : '#ffffff'} opacity={0.8} />
-                  {isSelected && !isPreviewMode && <circle r={20} fill="none" stroke="#38bdf8" strokeWidth={2} strokeDasharray="3,3" />}
+                  {/* Left Foothill Peak */}
+                  <g transform={`translate(-${mainW * 0.55}, 4)`}>
+                    <polygon
+                      points={`0,-${subH1} -${subH1 * 0.7},${subH1 * 0.6} ${subH1 * 0.7},${subH1 * 0.6}`}
+                      fill={styleConfig.mountainColor}
+                      stroke={baseStyle.mountainStroke || styleConfig.textColor}
+                      strokeWidth={1.2}
+                    />
+                    <polygon points={`0,-${subH1} -${subH1 * 0.7},${subH1 * 0.6} 0,${subH1 * 0.6}`} fill="#ffffff" opacity={0.25} />
+                  </g>
+
+                  {/* Right Foothill Peak */}
+                  <g transform={`translate(${mainW * 0.55}, 6)`}>
+                    <polygon
+                      points={`0,-${subH2} -${subH2 * 0.7},${subH2 * 0.6} ${subH2 * 0.7},${subH2 * 0.6}`}
+                      fill={styleConfig.mountainColor}
+                      stroke={baseStyle.mountainStroke || styleConfig.textColor}
+                      strokeWidth={1.2}
+                    />
+                    <polygon points={`0,-${subH2} -${subH2 * 0.7},${subH2 * 0.6} 0,${subH2 * 0.6}`} fill="#ffffff" opacity={0.2} />
+                  </g>
+
+                  {/* MAIN ORGANIC PEAK */}
+                  <g>
+                    {/* Base shadow facet */}
+                    <polygon
+                      points={`0,-${mainH} -${mainW / 2},${mainH * 0.6} ${mainW / 2},${mainH * 0.6}`}
+                      fill={styleConfig.mountainColor}
+                      stroke={baseStyle.mountainStroke || styleConfig.textColor}
+                      strokeWidth={1.5}
+                      strokeLinejoin="round"
+                    />
+                    {/* Left light facet */}
+                    <polygon
+                      points={`0,-${mainH} -${mainW / 2},${mainH * 0.6} 0,${mainH * 0.5}`}
+                      fill="#ffffff"
+                      opacity={isDark ? 0.25 : 0.45}
+                    />
+                    {/* Central Hand-Drawn Ridgeline */}
+                    <path
+                      d={`M0 -${mainH} Q -2 0, 0 ${mainH * 0.6}`}
+                      fill="none"
+                      stroke={baseStyle.mountainStroke || styleConfig.textColor}
+                      strokeWidth={1.2}
+                    />
+                    {/* Snow Cap for high peaks */}
+                    {mainH > 20 && (
+                      <polygon
+                        points={`0,-${mainH} -${mainW * 0.22},-${mainH * 0.4} 0,-${mainH * 0.45} ${mainW * 0.22},-${mainH * 0.4}`}
+                        fill="#ffffff"
+                        opacity={0.85}
+                      />
+                    )}
+                  </g>
+
+                  {/* Editor Selection outline */}
+                  {isSelected && !isPreviewMode && (
+                    <circle r={mainH + 4} fill="none" stroke="#38bdf8" strokeWidth={2} strokeDasharray="3,3" />
+                  )}
                 </g>
               );
             })}
 
-          {/* 8. Forests */}
-          {layers.forests &&
-            map.forests.map((f: any, idx) => {
-              const fId = f.id || `f_${idx}`;
-              const isSelected = selectedObject?.type === 'forest' && selectedObject.id === fId;
-              return (
-                <g
-                  key={fId}
-                  transform={`translate(${f.x}, ${f.y})`}
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    onSelectObject({ type: 'forest', id: fId });
-                  }}
-                  onMouseDown={(e) => {
-                    e.stopPropagation();
-                    setDraggingObj({ type: 'forest', id: fId });
-                  }}
-                  onContextMenu={(e) => {
-                    e.preventDefault();
-                    if (onContextMenuAction) onContextMenuAction(e, { type: 'forest', id: fId });
-                  }}
-                  className="cursor-pointer group"
-                >
-                  <circle r={f.radius || 20} fill={styleConfig.forestColor} opacity={0.6} />
-                  {isSelected && !isPreviewMode && <circle r={(f.radius || 20) + 4} fill="none" stroke="#38bdf8" strokeWidth={2} strokeDasharray="3,3" />}
-                </g>
-              );
-            })}
+          {/* MOUNTAIN RANGE LABEL */}
+          {mountainRangeLabel && layers.mountains && (
+            <g transform={`translate(${mountainRangeLabel.x}, ${mountainRangeLabel.y})`} pointerEvents="none">
+              <text
+                textAnchor="middle"
+                stroke={styleConfig.textHaloColor}
+                strokeWidth={3}
+                fill={styleConfig.textColor}
+                fontSize={12}
+                fontWeight="bold"
+                fontFamily="Cinzel, serif"
+                letterSpacing="2"
+                opacity={0.85}
+              >
+                {mountainRangeLabel.text}
+              </text>
+              <text
+                textAnchor="middle"
+                fill={styleConfig.textColor}
+                fontSize={12}
+                fontWeight="bold"
+                fontFamily="Cinzel, serif"
+                letterSpacing="2"
+                opacity={0.85}
+              >
+                {mountainRangeLabel.text}
+              </text>
+            </g>
+          )}
 
-          {/* 9. Cities / Settlements */}
+          {/* 10. CITIES & SETTLEMENTS (Cartographic Symbol System) */}
           {layers.cities &&
-            map.cities.map((c) => {
+            map.cities?.map((c: Settlement) => {
               const isSelected = selectedObject?.type === 'city' && selectedObject.id === c.id;
+              const isCapital = c.type === 'capital';
+
               return (
                 <g
-                  key={c.id}
+                  key={`city_${c.id}`}
                   transform={`translate(${c.x}, ${c.y})`}
                   onClick={(e) => {
                     e.stopPropagation();
@@ -303,24 +603,46 @@ export const MapCanvas: React.FC<MapCanvasProps> = ({
                     e.stopPropagation();
                     setDraggingObj({ type: 'city', id: c.id });
                   }}
-                  onContextMenu={(e) => {
-                    e.preventDefault();
-                    if (onContextMenuAction) onContextMenuAction(e, { type: 'city', id: c.id });
-                  }}
                   className="cursor-pointer group"
                 >
-                  <circle
-                    r={c.type === 'capital' ? 10 : 7}
-                    fill={c.type === 'capital' ? '#d4af37' : '#e74c3c'}
-                    stroke="#0b0d11"
-                    strokeWidth={2}
-                  />
-                  {isSelected && <circle r={16} fill="none" stroke="#38bdf8" strokeWidth={2} strokeDasharray="3,3" />}
+                  {/* Capital Ornate Heraldry Emblem vs Settlement Symbol */}
+                  {isCapital ? (
+                    <g transform="translate(-12, -12) scale(1)">
+                      <circle cx="12" cy="12" r="13" fill="#d4af37" opacity={0.25} />
+                      <circle cx="12" cy="12" r="9" fill={isDark ? '#0f172a' : '#fef3c7'} stroke="#d4af37" strokeWidth={2} />
+                      <path d={getVectorIconPath('capital')} fill="#d4af37" transform="scale(0.85) translate(2,2)" />
+                    </g>
+                  ) : (
+                    <g transform="translate(-10, -10)">
+                      <rect x="2" y="2" width="16" height="16" rx="3" fill={isDark ? '#1e293b' : '#ffffff'} stroke={styleConfig.textColor} strokeWidth={1.5} />
+                      <path d={getVectorIconPath(c.type)} fill={styleConfig.textColor} transform="scale(0.7) translate(4,4)" />
+                    </g>
+                  )}
+
+                  {/* Editor selection circle */}
+                  {isSelected && !isPreviewMode && (
+                    <circle r={16} fill="none" stroke="#38bdf8" strokeWidth={2} strokeDasharray="3,3" />
+                  )}
+
+                  {/* City Text Label with Legibility Halo */}
                   <text
-                    y={18}
+                    y={isCapital ? 22 : 18}
                     textAnchor="middle"
+                    stroke={styleConfig.textHaloColor}
+                    strokeWidth={3}
+                    strokeLinejoin="round"
                     fill={styleConfig.textColor}
-                    fontSize={11}
+                    fontSize={isCapital ? 13 : 11}
+                    fontWeight="bold"
+                    fontFamily={styleConfig.fontFamily}
+                  >
+                    {c.name}
+                  </text>
+                  <text
+                    y={isCapital ? 22 : 18}
+                    textAnchor="middle"
+                    fill={isCapital ? '#d4af37' : styleConfig.textColor}
+                    fontSize={isCapital ? 13 : 11}
                     fontWeight="bold"
                     fontFamily={styleConfig.fontFamily}
                   >
@@ -330,13 +652,15 @@ export const MapCanvas: React.FC<MapCanvasProps> = ({
               );
             })}
 
-          {/* 9b. Points of Interest (POIs) */}
+          {/* 11. POINTS OF INTEREST (Thematic Cartographic Symbols — NO Google Maps Pins!) */}
           {layers.locations !== false &&
-            map.pointsOfInterest?.map((p) => {
+            map.pointsOfInterest?.map((p: PointOfInterest) => {
               const isSelected = selectedObject?.type === 'poi' && selectedObject.id === p.id;
+              const iconPath = getVectorIconPath(p.type);
+
               return (
                 <g
-                  key={p.id}
+                  key={`poi_${p.id}`}
                   transform={`translate(${p.x}, ${p.y})`}
                   onClick={(e) => {
                     e.stopPropagation();
@@ -346,26 +670,38 @@ export const MapCanvas: React.FC<MapCanvasProps> = ({
                     e.stopPropagation();
                     setDraggingObj({ type: 'poi', id: p.id });
                   }}
-                  onContextMenu={(e) => {
-                    e.preventDefault();
-                    if (onContextMenuAction) onContextMenuAction(e, { type: 'poi', id: p.id });
-                  }}
                   className="cursor-pointer group"
                 >
-                  <path
-                    d="M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7zm0 9.5c-1.38 0-2.5-1.12-2.5-2.5s1.12-2.5 2.5-2.5 2.5 1.12 2.5 2.5-1.12 2.5-2.5 2.5z"
-                    fill="#38bdf8"
-                    stroke="#0b0d11"
-                    strokeWidth={1.5}
-                    transform="translate(-12, -22) scale(0.9)"
-                  />
-                  {isSelected && !isPreviewMode && <circle r={16} fill="none" stroke="#38bdf8" strokeWidth={2} strokeDasharray="3,3" />}
+                  {/* Cartographic POI Emblem Frame */}
+                  <g transform="translate(-10, -10)">
+                    <circle cx="10" cy="10" r="10" fill={isDark ? '#0f172a' : '#f8fafc'} stroke="#38bdf8" strokeWidth={1.5} />
+                    <path d={iconPath} fill="#38bdf8" transform="scale(0.7) translate(4,4)" />
+                  </g>
+
+                  {/* Editor Selection Ring */}
+                  {isSelected && !isPreviewMode && (
+                    <circle r={16} fill="none" stroke="#38bdf8" strokeWidth={2} strokeDasharray="3,3" />
+                  )}
+
+                  {/* POI Label with Halo */}
                   <text
-                    y={14}
+                    y={16}
+                    textAnchor="middle"
+                    stroke={styleConfig.textHaloColor}
+                    strokeWidth={3}
+                    fill={styleConfig.textColor}
+                    fontSize={10}
+                    fontWeight="semibold"
+                    fontFamily={styleConfig.fontFamily}
+                  >
+                    {p.name}
+                  </text>
+                  <text
+                    y={16}
                     textAnchor="middle"
                     fill={styleConfig.textColor}
                     fontSize={10}
-                    fontWeight="bold"
+                    fontWeight="semibold"
                     fontFamily={styleConfig.fontFamily}
                   >
                     {p.name}
@@ -374,13 +710,13 @@ export const MapCanvas: React.FC<MapCanvasProps> = ({
               );
             })}
 
-          {/* 10. Typography Labels */}
+          {/* 12. TYPOGRAPHY LABELS */}
           {layers.labels &&
-            map.labels.map((l) => {
+            map.labels?.map((l) => {
               const isSelected = selectedObject?.type === 'label' && selectedObject.id === l.id;
               return (
                 <g
-                  key={l.id}
+                  key={`label_${l.id}`}
                   transform={`translate(${l.x}, ${l.y}) rotate(${l.rotation || 0})`}
                   onClick={(e) => {
                     e.stopPropagation();
@@ -394,6 +730,9 @@ export const MapCanvas: React.FC<MapCanvasProps> = ({
                 >
                   <text
                     textAnchor="middle"
+                    stroke={styleConfig.textHaloColor}
+                    strokeWidth={3}
+                    strokeLinejoin="round"
                     fill={l.color || styleConfig.textColor}
                     fontSize={l.fontSize || 14}
                     fontWeight={l.fontWeight || 'bold'}
@@ -402,12 +741,24 @@ export const MapCanvas: React.FC<MapCanvasProps> = ({
                   >
                     {l.text}
                   </text>
-                  {isSelected && !isPreviewMode && <rect x={-50} y={-15} width={100} height={24} fill="none" stroke="#38bdf8" strokeWidth={1.5} strokeDasharray="3,3" />}
+                  <text
+                    textAnchor="middle"
+                    fill={l.color || styleConfig.textColor}
+                    fontSize={l.fontSize || 14}
+                    fontWeight={l.fontWeight || 'bold'}
+                    fontFamily={l.fontFamily || styleConfig.fontFamily}
+                    opacity={l.opacity || 1}
+                  >
+                    {l.text}
+                  </text>
+                  {isSelected && !isPreviewMode && (
+                    <rect x={-50} y={-15} width={100} height={24} fill="none" stroke="#38bdf8" strokeWidth={1.5} strokeDasharray="3,3" />
+                  )}
                 </g>
               );
             })}
 
-          {/* 11. Private GM Secret Layer (Never visible in Preview or Public Exports) */}
+          {/* 13. PRIVATE GM SECRET LAYER (Never rendered in export or preview) */}
           {layers.private_gm && !isPreviewMode && (
             <g id="layer-private-gm" opacity={opacities['private_gm'] ? opacities['private_gm'] / 100 : 1}>
               {map.pointsOfInterest?.filter((p: any) => p.isSecret || p.type === 'dungeon').map((p: any) => (
@@ -421,37 +772,46 @@ export const MapCanvas: React.FC<MapCanvasProps> = ({
             </g>
           )}
 
-          {/* 12. Grid Overlay */}
+          {/* 14. GRID OVERLAY */}
           {layers.grid && <rect width={map.width} height={map.height} fill="url(#grid-pattern)" pointerEvents="none" />}
 
-          {/* 12. Compass Rose */}
+          {/* 15. COMPASS ROSE */}
           {layers.compass && (
-            <g transform={`translate(${map.width - 80}, 80)`} pointerEvents="none">
-              <circle r={35} fill="none" stroke={styleConfig.textColor} strokeWidth={1.5} opacity={0.6} />
-              <polygon points="0,-35 6,-6 35,0 6,6 0,35 -6,6 -35,0 -6,-6" fill={styleConfig.textColor} opacity={0.8} />
-              <text y={-40} textAnchor="middle" fill={styleConfig.textColor} fontSize={12} fontWeight="bold">
+            <g transform={`translate(${map.width - 85}, 85)`} pointerEvents="none">
+              <circle r={32} fill="none" stroke={styleConfig.textColor} strokeWidth={1.5} opacity={0.5} />
+              <circle r={36} fill="none" stroke={styleConfig.textColor} strokeWidth={0.8} opacity={0.3} strokeDasharray="2,2" />
+              <polygon points="0,-32 5,-5 32,0 5,5 0,32 -5,5 -32,0 -5,-5" fill={styleConfig.textColor} opacity={0.85} />
+              <polygon points="0,-32 0,0 5,-5" fill="#ffffff" opacity={0.5} />
+              <text y={-38} textAnchor="middle" fill={styleConfig.textColor} fontSize={12} fontWeight="bold" fontFamily="Cinzel, serif">
                 N
               </text>
             </g>
           )}
 
-          {/* 13. Scale Bar */}
+          {/* 16. SCALE BAR */}
           <g transform={`translate(60, ${map.height - 40})`} pointerEvents="none">
+            <rect x={-4} y={-16} width={108} height={24} fill={isDark ? '#0f172a' : '#fef3c7'} fillOpacity={0.6} rx={4} stroke={styleConfig.textColor} strokeWidth={0.5} />
             <line x1={0} y1={0} x2={100} y2={0} stroke={styleConfig.textColor} strokeWidth={3} />
-            <text x={50} y={-8} textAnchor="middle" fill={styleConfig.textColor} fontSize={10} fontFamily="monospace">
+            <line x1={0} y1={-4} x2={0} y2={4} stroke={styleConfig.textColor} strokeWidth={2} />
+            <line x1={50} y1={-3} x2={50} y2={3} stroke={styleConfig.textColor} strokeWidth={1.5} />
+            <line x1={100} y1={-4} x2={100} y2={4} stroke={styleConfig.textColor} strokeWidth={2} />
+            <text x={50} y={-8} textAnchor="middle" fill={styleConfig.textColor} fontSize={10} fontFamily="Cinzel, serif" fontWeight="bold">
               100 Miles
             </text>
           </g>
 
-          {/* 14. Decorative Title Banner */}
+          {/* 17. DECORATIVE TITLE BANNER */}
           {map.titleBannerText && (
-            <g transform={`translate(${map.width / 2}, 60)`} pointerEvents="none">
-              <rect x={-150} y={-20} width={300} height={40} fill={isDark ? '#0f172a' : '#fef3c7'} stroke="#d4af37" strokeWidth={2} rx={8} />
-              <text y={6} textAnchor="middle" fill="#d4af37" fontSize={16} fontWeight="bold" fontFamily="Cinzel, serif">
+            <g transform={`translate(${map.width / 2}, 55)`} pointerEvents="none">
+              <rect x={-160} y={-22} width={320} height={44} fill={isDark ? '#0f172a' : '#fef3c7'} fillOpacity={0.9} stroke="#d4af37" strokeWidth={2} rx={10} />
+              <text y={6} textAnchor="middle" fill="#d4af37" fontSize={16} fontWeight="bold" fontFamily="Cinzel, serif" letterSpacing="1.5">
                 {map.titleBannerText}
               </text>
             </g>
           )}
+
+          {/* Vignette Overlay for Depth */}
+          <rect width={map.width} height={map.height} fill="url(#vignette-grad)" pointerEvents="none" />
         </g>
       </svg>
     </div>
