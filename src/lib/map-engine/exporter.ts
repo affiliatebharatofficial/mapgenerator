@@ -17,7 +17,30 @@ export async function exportMapPNG(
   showWatermark = false
 ): Promise<void> {
   try {
-    const svgData = new XMLSerializer().serializeToString(svgElement);
+    // Clone SVG element to prevent mutating live DOM
+    const clonedSvg = svgElement.cloneNode(true) as SVGSVGElement;
+    
+    // Ensure root SVG attributes are clean for export
+    clonedSvg.setAttribute('xmlns', 'http://www.w3.org/2000/svg');
+    clonedSvg.setAttribute('xmlns:xlink', 'http://www.w3.org/1999/xlink');
+
+    // Remove any editor selection outlines or handles if present
+    const selectionOutlines = clonedSvg.querySelectorAll('[stroke-dasharray="3,3"]');
+    selectionOutlines.forEach((el) => {
+      if (el.tagName.toLowerCase() === 'circle' || el.tagName.toLowerCase() === 'rect') {
+        el.remove();
+      }
+    });
+
+    const viewBoxAttr = clonedSvg.getAttribute('viewBox') || '0 0 1200 800';
+    const viewBoxParts = viewBoxAttr.split(' ').map(Number);
+    const nativeWidth = viewBoxParts[2] || 1200;
+    const nativeHeight = viewBoxParts[3] || 800;
+
+    clonedSvg.setAttribute('width', nativeWidth.toString());
+    clonedSvg.setAttribute('height', nativeHeight.toString());
+
+    const svgData = new XMLSerializer().serializeToString(clonedSvg);
     const canvas = document.createElement('canvas');
     const ctx = canvas.getContext('2d');
 
@@ -27,12 +50,15 @@ export async function exportMapPNG(
     if (resolution === 'standard') multiplier = 1;
     if (resolution === 'ultra_hd') multiplier = 4;
 
-    const svgRect = svgElement.getBoundingClientRect();
-    const width = (svgRect.width || 1200) * multiplier;
-    const height = (svgRect.height || 800) * multiplier;
+    const width = Math.round(nativeWidth * multiplier);
+    const height = Math.round(nativeHeight * multiplier);
 
     canvas.width = width;
     canvas.height = height;
+
+    // PREVENT LEFT-EDGE / BORDER BLACK ARTIFACT: Fill canvas background explicitly first
+    ctx.fillStyle = '#b0c4de'; // Default parchment cartography water tone fallback
+    ctx.fillRect(0, 0, width, height);
 
     const img = new Image();
     const svgBlob = new Blob([svgData], { type: 'image/svg+xml;charset=utf-8' });
@@ -40,6 +66,7 @@ export async function exportMapPNG(
 
     return new Promise((resolve, reject) => {
       img.onload = () => {
+        // Draw SVG image seamlessly across full canvas bounds without margins
         ctx.drawImage(img, 0, 0, width, height);
         URL.revokeObjectURL(url);
 
@@ -59,7 +86,7 @@ export async function exportMapPNG(
         downloadLink.click();
         document.body.removeChild(downloadLink);
 
-        // Confetti burst
+        // Confetti celebration burst
         confetti({
           particleCount: 80,
           spread: 70,
@@ -82,7 +109,10 @@ export async function exportMapPNG(
 }
 
 export function exportMapToSVG(svgElement: SVGSVGElement, mapName: string): void {
-  const svgData = new XMLSerializer().serializeToString(svgElement);
+  const clonedSvg = svgElement.cloneNode(true) as SVGSVGElement;
+  clonedSvg.setAttribute('xmlns', 'http://www.w3.org/2000/svg');
+
+  const svgData = new XMLSerializer().serializeToString(clonedSvg);
   const blob = new Blob([svgData], { type: 'image/svg+xml;charset=utf-8' });
   const url = URL.createObjectURL(blob);
 
@@ -102,8 +132,10 @@ export function exportMapToSVG(svgElement: SVGSVGElement, mapName: string): void
 }
 
 export async function exportMapToPDF(svgElement: SVGSVGElement, mapName: string): Promise<void> {
-  // SVG embedded in HTML document for high resolution PDF print dialog
-  const svgData = new XMLSerializer().serializeToString(svgElement);
+  const clonedSvg = svgElement.cloneNode(true) as SVGSVGElement;
+  clonedSvg.setAttribute('xmlns', 'http://www.w3.org/2000/svg');
+
+  const svgData = new XMLSerializer().serializeToString(clonedSvg);
   const printWindow = window.open('', '_blank');
   if (!printWindow) return;
 
@@ -114,7 +146,7 @@ export async function exportMapToPDF(svgElement: SVGSVGElement, mapName: string)
         <title>${mapName} — CreateFantasyMap PDF Export</title>
         <style>
           @page { size: landscape; margin: 0; }
-          body { margin: 0; background: #000; display: flex; items: center; justify-content: center; height: 100vh; }
+          body { margin: 0; background: #b0c4de; display: flex; align-items: center; justify-content: center; height: 100vh; overflow: hidden; }
           svg { width: 100vw; height: 100vh; object-fit: contain; }
         </style>
       </head>

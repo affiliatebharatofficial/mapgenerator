@@ -10,7 +10,7 @@ import type {
 } from '../../types/map';
 import { MAP_STYLES } from '../../lib/map-engine/styles';
 import { getVectorIconPath } from '../../lib/map-engine/iconLibrary';
-import { isRenderableLabel, type BoundingBox, checkLabelOverlap } from '../../lib/map-engine/labelUtils';
+import { isRenderableLabel, type BoundingBox } from '../../lib/map-engine/labelUtils';
 import type { ActiveTool, TerrainBrushType } from '../../types/editorTools';
 import type { CartographicThemeConfig } from '../../types/cartography';
 
@@ -239,12 +239,6 @@ export const MapCanvas: React.FC<MapCanvasProps> = ({
     return hillocks;
   }, [map.width, map.height, map.seed]);
 
-  // Lightweight label collision detection memory
-  const renderedLabelBoxes = useMemo(() => {
-    const boxes: BoundingBox[] = [];
-    return boxes;
-  }, []);
-
   return (
     <div className="w-full h-full relative overflow-hidden bg-[#090b0e] cursor-crosshair select-none">
       <svg
@@ -254,6 +248,7 @@ export const MapCanvas: React.FC<MapCanvasProps> = ({
         onMouseMove={handleCanvasMouseMove}
         onMouseUp={handleCanvasMouseUp}
         className="w-full h-full block"
+        style={{ backgroundColor: styleConfig.waterColor }}
       >
         <defs>
           {/* Parchment & Grid Textures */}
@@ -271,7 +266,7 @@ export const MapCanvas: React.FC<MapCanvasProps> = ({
         {/* Scaled & Panned Group Container */}
         <g transform={`translate(${transform.x}, ${transform.y}) scale(${transform.k})`}>
           
-          {/* 1. OCEAN WATER BACKGROUND */}
+          {/* 1. OCEAN WATER BACKGROUND (Fills entire map geometry) */}
           <rect width={map.width} height={map.height} fill={styleConfig.waterColor} />
 
           {/* 1b. COASTAL WATER RIPPLES (Concentric Cartographic Echo Rings) */}
@@ -906,15 +901,21 @@ export const MapCanvas: React.FC<MapCanvasProps> = ({
             </text>
           </g>
 
-          {/* 17. DECORATIVE TITLE BANNER (ONLY if valid non-placeholder title!) */}
+          {/* 17. DECORATIVE TITLE BANNER (Safe Positioning — NEVER Clipped!) */}
           {isRenderableLabel(map.titleBannerText || map.name) && (
-            <g transform={`translate(${map.width / 2}, 55)`} pointerEvents="none">
-              <rect x={-160} y={-22} width={320} height={44} fill={isDark ? '#0f172a' : '#fef3c7'} fillOpacity={0.9} stroke="#d4af37" strokeWidth={2} rx={10} />
-              <text y={6} textAnchor="middle" fill="#d4af37" fontSize={16} fontWeight="bold" fontFamily="Cinzel, serif" letterSpacing="1.5">
+            <g transform={`translate(${map.width / 2}, 60)`} pointerEvents="none">
+              <rect x={-170} y={-20} width={340} height={42} fill={isDark ? '#0f172a' : '#fef3c7'} fillOpacity={0.92} stroke="#d4af37" strokeWidth={2} rx={8} />
+              <text y={6} textAnchor="middle" fill="#d4af37" fontSize={15} fontWeight="bold" fontFamily="Cinzel, serif" letterSpacing="1.5">
                 {(map.titleBannerText || map.name).toUpperCase()}
               </text>
             </g>
           )}
+
+          {/* 18. CLASSIC FANTASY ATLAS OUTER DOUBLE BORDER FRAME */}
+          <g id="cartography-outer-border-frame" pointerEvents="none">
+            <rect x={10} y={10} width={map.width - 20} height={map.height - 20} stroke={styleConfig.borderColor} strokeWidth={2} fill="none" opacity={0.7} rx={4} />
+            <rect x={14} y={14} width={map.width - 28} height={map.height - 28} stroke={styleConfig.borderColor} strokeWidth={1} strokeDasharray="8,4" fill="none" opacity={0.5} rx={3} />
+          </g>
 
           {/* Vignette Overlay for Depth */}
           <rect width={map.width} height={map.height} fill="url(#vignette-grad)" pointerEvents="none" />
