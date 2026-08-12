@@ -356,9 +356,12 @@ export const CreatePage: React.FC<CreatePageProps> = ({
     return () => window.removeEventListener('keydown', handleKeyDown);
   }, [selectedObject, undo, redo, handleDeleteSelected, handleDuplicateSelected]);
 
-  // Load Cloud Map when editingMapId is passed
+  const loadedMapIdRef = useRef<string | null>(null);
+
+  // Load Cloud Map when editingMapId is passed (Only once per map ID)
   useEffect(() => {
-    if (editingMapId) {
+    if (editingMapId && loadedMapIdRef.current !== editingMapId) {
+      loadedMapIdRef.current = editingMapId;
       MapService.getMapBySlug(editingMapId, user?.id).then((record) => {
         if (record) {
           resetHistory(record.map_data);
@@ -424,15 +427,16 @@ export const CreatePage: React.FC<CreatePageProps> = ({
     return true;
   };
 
-  // Change Config & Regenerate Map Action
+  // Change Config State without auto-resetting procedural map
   const handleChangeConfig = useCallback(
     (newConfig: GeneratorConfig) => {
       setConfig(newConfig);
-      const newMap = generateFantasyMap(newConfig);
-      pushState(newMap);
-      setSelectedObject(null);
+      // If visual style theme changed, apply style to current map without resetting terrain/objects
+      if (newConfig.style !== currentMap.style) {
+        pushState({ ...currentMap, style: newConfig.style });
+      }
     },
-    [pushState]
+    [currentMap, pushState]
   );
 
   // Generate Map Action
