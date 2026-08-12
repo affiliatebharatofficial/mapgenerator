@@ -10,7 +10,7 @@ import type {
 } from '../../types/map';
 import { MAP_STYLES } from '../../lib/map-engine/styles';
 import { getVectorIconPath } from '../../lib/map-engine/iconLibrary';
-import { isRenderableLabel, type BoundingBox } from '../../lib/map-engine/labelUtils';
+import { isRenderableLabel } from '../../lib/map-engine/labelUtils';
 import type { ActiveTool, TerrainBrushType } from '../../types/editorTools';
 import type { CartographicThemeConfig } from '../../types/cartography';
 
@@ -41,7 +41,7 @@ interface MapCanvasProps {
   isPreviewMode?: boolean;
 }
 
-// Pseudo-random helper based on seed to ensure 100% deterministic rendering
+// Deterministic PRNG helper based on seed
 function getDeterministicRandom(seed: number, index: number) {
   const x = Math.sin(seed * 9999 + index * 1337) * 10000;
   return x - Math.floor(x);
@@ -64,11 +64,11 @@ function getSmoothBezierPath(pts: Position[]): string {
 
 // Helper to generate organic irregular woodland boundary path from center + radius (No green circles!)
 function getOrganicForestPath(cx: number, cy: number, radius: number, seed: number, index: number): string {
-  const steps = 14;
+  const steps = 12;
   let path = '';
   for (let i = 0; i < steps; i++) {
     const angle = (i * Math.PI * 2) / steps;
-    const noise = 0.75 + getDeterministicRandom(seed, index * 30 + i) * 0.45;
+    const noise = 0.8 + getDeterministicRandom(seed, index * 30 + i) * 0.4;
     const r = radius * noise;
     const x = cx + Math.cos(angle) * r;
     const y = cy + Math.sin(angle) * r;
@@ -76,10 +76,10 @@ function getOrganicForestPath(cx: number, cy: number, radius: number, seed: numb
       path += `M ${x} ${y}`;
     } else {
       const prevAngle = ((i - 1) * Math.PI * 2) / steps;
-      const prevNoise = 0.75 + getDeterministicRandom(seed, index * 30 + (i - 1)) * 0.45;
+      const prevNoise = 0.8 + getDeterministicRandom(seed, index * 30 + (i - 1)) * 0.4;
       const prevR = radius * prevNoise;
       const cpAngle = (angle + prevAngle) / 2;
-      const cpR = (r + prevR) / 2 * 1.15;
+      const cpR = (r + prevR) / 2 * 1.1;
       const cpx = cx + Math.cos(cpAngle) * cpR;
       const cpy = cy + Math.sin(cpAngle) * cpR;
       path += ` Q ${cpx} ${cpy}, ${x} ${y}`;
@@ -173,23 +173,23 @@ export const MapCanvas: React.FC<MapCanvasProps> = ({
     onMouseUp(e);
   };
 
-  // Pre-calculate organic forest paths & tree scatter (No green circles!)
+  // Pre-calculate organic forest paths & restrained tree scatter (No green circles!)
   const forestData = useMemo(() => {
     if (!map.forests) return [];
     return map.forests.map((f, fIdx) => {
       const radius = f.radius || 28;
       const organicPath = getOrganicForestPath(f.x, f.y, radius, map.seed, fIdx);
-      const treeCount = Math.min(22, Math.max(10, Math.floor(radius / 2.2)));
+      const treeCount = Math.min(12, Math.max(6, Math.floor(radius / 3.5)));
       const trees = [];
 
       for (let tIdx = 0; tIdx < treeCount; tIdx++) {
         const r1 = getDeterministicRandom(map.seed, fIdx * 100 + tIdx * 2);
         const r2 = getDeterministicRandom(map.seed, fIdx * 100 + tIdx * 2 + 1);
         const angle = r1 * Math.PI * 2;
-        const dist = Math.sqrt(r2) * (radius * 0.72);
+        const dist = Math.sqrt(r2) * (radius * 0.65);
         const tx = Math.cos(angle) * dist;
         const ty = Math.sin(angle) * dist;
-        const scale = 0.55 + getDeterministicRandom(map.seed, fIdx * 50 + tIdx) * 0.45;
+        const scale = 0.5 + getDeterministicRandom(map.seed, fIdx * 50 + tIdx) * 0.4;
         trees.push({ tx, ty, scale });
       }
       return { forest: f, organicPath, trees };
@@ -222,23 +222,6 @@ export const MapCanvas: React.FC<MapCanvasProps> = ({
     return { ridgeConnections, rangeLabel };
   }, [map.mountains]);
 
-  // Calculate subtle terrain hillocks for empty geography areas
-  const terrainHillocks = useMemo(() => {
-    const hillocks = [];
-    const seed = map.seed || 12345;
-    const count = 12;
-    const width = map.width || 1200;
-    const height = map.height || 800;
-
-    for (let i = 0; i < count; i++) {
-      const hx = 100 + getDeterministicRandom(seed, i * 11) * (width - 200);
-      const hy = 100 + getDeterministicRandom(seed, i * 17) * (height - 200);
-      const scale = 0.5 + getDeterministicRandom(seed, i * 23) * 0.4;
-      hillocks.push({ hx, hy, scale });
-    }
-    return hillocks;
-  }, [map.width, map.height, map.seed]);
-
   return (
     <div className="w-full h-full relative overflow-hidden bg-[#090b0e] cursor-crosshair select-none">
       <svg
@@ -251,34 +234,33 @@ export const MapCanvas: React.FC<MapCanvasProps> = ({
         style={{ backgroundColor: styleConfig.waterColor }}
       >
         <defs>
-          {/* Parchment & Grid Textures */}
+          {/* Editor-only Grid Pattern */}
           <pattern id="grid-pattern" width="40" height="40" patternUnits="userSpaceOnUse">
-            <path d="M 40 0 L 0 0 0 40" fill="none" stroke={isDark ? '#334155' : '#d1d5db'} strokeWidth="0.5" opacity="0.4" />
+            <path d="M 40 0 L 0 0 0 40" fill="none" stroke={isDark ? '#334155' : '#d1d5db'} strokeWidth="0.5" opacity="0.3" />
           </pattern>
 
           {/* Vignette Gradient overlay */}
           <radialGradient id="vignette-grad" cx="50%" cy="50%" r="70%">
             <stop offset="60%" stopColor="#000" stopOpacity="0" />
-            <stop offset="100%" stopColor="#000" stopOpacity={isDark ? '0.6' : '0.2'} />
+            <stop offset="100%" stopColor="#000" stopOpacity={isDark ? '0.5' : '0.15'} />
           </radialGradient>
         </defs>
 
         {/* Scaled & Panned Group Container */}
         <g transform={`translate(${transform.x}, ${transform.y}) scale(${transform.k})`}>
           
-          {/* 1. OCEAN WATER BACKGROUND (Fills entire map geometry) */}
+          {/* 1. OCEAN WATER BACKGROUND */}
           <rect width={map.width} height={map.height} fill={styleConfig.waterColor} />
 
-          {/* 1b. COASTAL WATER RIPPLES (Concentric Cartographic Echo Rings) */}
+          {/* 1b. COASTAL WATER RIPPLES (Restrained Cartographic Shoreline Echoes) */}
           {layers.terrain && (
             <g id="coastal-hatching-rings" pointerEvents="none">
-              <path d={map.coastline} fill="none" stroke={styleConfig.coastColor} strokeWidth={8} opacity={0.22} />
-              <path d={map.coastline} fill="none" stroke={styleConfig.coastColor} strokeWidth={4.5} opacity={0.32} />
-              <path d={map.coastline} fill="none" stroke={styleConfig.coastColor} strokeWidth={2} opacity={0.45} />
+              <path d={map.coastline} fill="none" stroke={styleConfig.coastColor} strokeWidth={5} opacity={0.25} />
+              <path d={map.coastline} fill="none" stroke={styleConfig.coastColor} strokeWidth={2} opacity={0.4} />
               {map.islandPaths?.map((ip, idx) => (
                 <g key={`island_ring_${idx}`}>
-                  <path d={ip} fill="none" stroke={styleConfig.coastColor} strokeWidth={5} opacity={0.22} />
-                  <path d={ip} fill="none" stroke={styleConfig.coastColor} strokeWidth={2} opacity={0.4} />
+                  <path d={ip} fill="none" stroke={styleConfig.coastColor} strokeWidth={4} opacity={0.22} />
+                  <path d={ip} fill="none" stroke={styleConfig.coastColor} strokeWidth={1.8} opacity={0.38} />
                 </g>
               ))}
             </g>
@@ -291,7 +273,7 @@ export const MapCanvas: React.FC<MapCanvasProps> = ({
                 d={map.coastline}
                 fill={styleConfig.landColor}
                 stroke={styleConfig.coastColor}
-                strokeWidth={1.8}
+                strokeWidth={1.6}
                 className="transition-colors duration-300"
               />
               {map.islandPaths?.map((ip, idx) => (
@@ -300,25 +282,8 @@ export const MapCanvas: React.FC<MapCanvasProps> = ({
                   d={ip}
                   fill={styleConfig.landColor}
                   stroke={styleConfig.coastColor}
-                  strokeWidth={1.6}
+                  strokeWidth={1.4}
                 />
-              ))}
-            </g>
-          )}
-
-          {/* 2b. SUBTLE TERRAIN HILLOCKS & GEOGRAPHIC TEXTURE IN EMPTY AREAS */}
-          {layers.terrain && (
-            <g id="terrain-hillocks-texture" pointerEvents="none" opacity={0.25}>
-              {terrainHillocks.map((h, idx) => (
-                <g key={`hill_${idx}`} transform={`translate(${h.hx}, ${h.hy}) scale(${h.scale})`}>
-                  <path
-                    d="M-12 4 Q -6 -6, 0 4 M0 4 Q 6 -6, 12 4"
-                    fill="none"
-                    stroke={styleConfig.mountainColor}
-                    strokeWidth={1.2}
-                    strokeLinecap="round"
-                  />
-                </g>
               ))}
             </g>
           )}
@@ -341,11 +306,11 @@ export const MapCanvas: React.FC<MapCanvasProps> = ({
                   ? '#c0392b'
                   : '#27ae60'
               }
-              opacity={0.3}
+              opacity={0.25}
             />
           ))}
 
-          {/* 4. POLITICAL REGIONS & KINGDOM BORDERS */}
+          {/* 4. POLITICAL REGIONS & KINGDOM BORDERS (Restrained Opacity & Subordinate Text) */}
           {layers.kingdoms &&
             map.kingdoms?.map((k: MapKingdom) => {
               if (!k.borderPath) return null;
@@ -353,40 +318,40 @@ export const MapCanvas: React.FC<MapCanvasProps> = ({
 
               return (
                 <g key={`kingdom_${k.id}`}>
-                  {/* Soft parchment tinted fill */}
+                  {/* Subtle parchment tinted region fill */}
                   <path
                     d={k.borderPath}
                     fill={k.color || styleConfig.borderColor}
-                    fillOpacity={0.15}
+                    fillOpacity={0.12}
                     stroke={k.color || styleConfig.borderColor}
-                    strokeWidth={1.8}
-                    strokeDasharray="6,4"
+                    strokeWidth={1.4}
+                    strokeDasharray="5,4"
                   />
-                  {/* Kingdom Region Title Label (ONLY if valid non-placeholder name!) */}
+                  {/* Kingdom Region Title Label (Subordinate to Main Map Title!) */}
                   {k.center && hasValidName && (
                     <g transform={`translate(${k.center.x}, ${k.center.y})`} pointerEvents="none">
                       <text
                         textAnchor="middle"
                         stroke={styleConfig.textHaloColor}
-                        strokeWidth={4}
+                        strokeWidth={3}
                         strokeLinejoin="round"
                         fill={styleConfig.textColor}
-                        fontSize={15}
-                        fontWeight="bold"
+                        fontSize={13}
+                        fontWeight="semibold"
                         fontFamily="Cinzel, serif"
-                        letterSpacing="2"
-                        opacity={0.8}
+                        letterSpacing="1.5"
+                        opacity={0.65}
                       >
                         {k.name.toUpperCase()}
                       </text>
                       <text
                         textAnchor="middle"
                         fill={styleConfig.textColor}
-                        fontSize={15}
-                        fontWeight="bold"
+                        fontSize={13}
+                        fontWeight="semibold"
                         fontFamily="Cinzel, serif"
-                        letterSpacing="2"
-                        opacity={0.8}
+                        letterSpacing="1.5"
+                        opacity={0.65}
                       >
                         {k.name.toUpperCase()}
                       </text>
@@ -406,7 +371,7 @@ export const MapCanvas: React.FC<MapCanvasProps> = ({
                   d={lakePathData}
                   fill={styleConfig.waterColor}
                   stroke={styleConfig.coastColor}
-                  strokeWidth={1.5}
+                  strokeWidth={1.4}
                 />
               );
             })}
@@ -417,25 +382,14 @@ export const MapCanvas: React.FC<MapCanvasProps> = ({
               const pts = r.points || r.path || [];
               if (pts.length < 2) return null;
               const bezierPath = getSmoothBezierPath(pts);
-              const mainWidth = r.width || 3.5;
+              const mainWidth = r.width || 3.2;
               const hasValidRiverName = isRenderableLabel(r.name);
 
-              // Midpoint calculation for river italic label
               const midIdx = Math.floor(pts.length / 2);
               const midPt = pts[midIdx] || pts[0];
 
               return (
                 <g key={`river_${r.id}`}>
-                  {/* Outer estuary glow */}
-                  <path
-                    d={bezierPath}
-                    fill="none"
-                    stroke={styleConfig.coastColor}
-                    strokeWidth={mainWidth + 1.2}
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    opacity={0.35}
-                  />
                   {/* Main tapering river path */}
                   <path
                     d={bezierPath}
@@ -456,7 +410,7 @@ export const MapCanvas: React.FC<MapCanvasProps> = ({
                         fontSize={10}
                         fontStyle="italic"
                         fontFamily="Cinzel, serif"
-                        opacity={0.85}
+                        opacity={0.8}
                       >
                         {r.name}
                       </text>
@@ -466,7 +420,7 @@ export const MapCanvas: React.FC<MapCanvasProps> = ({
                         fontSize={10}
                         fontStyle="italic"
                         fontFamily="Cinzel, serif"
-                        opacity={0.85}
+                        opacity={0.8}
                       >
                         {r.name}
                       </text>
@@ -476,7 +430,7 @@ export const MapCanvas: React.FC<MapCanvasProps> = ({
               );
             })}
 
-          {/* 7. ROADS (Hand-Drawn Warm Ink Lines with Hierarchy) */}
+          {/* 7. ROADS — MAJOR CORRECTION (Restrained, Thin, Muted Brown Ink Lines — NO SPAGHETTI!) */}
           {layers.roads &&
             map.roads?.map((rd) => {
               const pts = rd.points || rd.path || [];
@@ -490,11 +444,11 @@ export const MapCanvas: React.FC<MapCanvasProps> = ({
                   d={bezierPath}
                   fill="none"
                   stroke={styleConfig.roadColor}
-                  strokeWidth={isMajor ? 2.2 : 1.4}
-                  strokeDasharray={isMajor ? 'none' : '4,3'}
+                  strokeWidth={isMajor ? 1.4 : 1.0}
+                  strokeDasharray={isMajor ? 'none' : '3,3'}
                   strokeLinecap="round"
                   strokeLinejoin="round"
-                  opacity={isMajor ? 0.85 : 0.65}
+                  opacity={isMajor ? 0.55 : 0.35}
                 />
               );
             })}
@@ -519,7 +473,7 @@ export const MapCanvas: React.FC<MapCanvasProps> = ({
                   className="cursor-pointer"
                 >
                   {/* Organic woodland irregular background wash (NO green circle!) */}
-                  <path d={organicPath} fill={styleConfig.forestColor} opacity={0.28} />
+                  <path d={organicPath} fill={styleConfig.forestColor} opacity={0.22} />
 
                   {/* Scatter of detailed illustrated tree icons inside organic boundary */}
                   {trees.map((t, tIdx) => (
@@ -550,8 +504,8 @@ export const MapCanvas: React.FC<MapCanvasProps> = ({
                   d={mountainRangeData.ridgeConnections}
                   fill="none"
                   stroke={baseStyle.mountainStroke || styleConfig.textColor}
-                  strokeWidth={2}
-                  opacity={0.35}
+                  strokeWidth={1.5}
+                  opacity={0.3}
                   strokeDasharray="3,2"
                 />
               )}
@@ -559,11 +513,11 @@ export const MapCanvas: React.FC<MapCanvasProps> = ({
               {map.mountains?.map((m: Position, idx: number) => {
                 const mId = m.id || `m_${idx}`;
                 const isSelected = selectedObject?.type === 'mountain' && selectedObject.id === mId;
-                const mainH = m.height || 24;
+                const mainH = m.height || 22;
                 const mainW = mainH * 1.2;
 
-                const subH1 = mainH * 0.65;
-                const subH2 = mainH * 0.55;
+                const subH1 = mainH * 0.6;
+                const subH2 = mainH * 0.5;
 
                 return (
                   <g
@@ -608,14 +562,14 @@ export const MapCanvas: React.FC<MapCanvasProps> = ({
                         points={`0,-${mainH} -${mainW / 2},${mainH * 0.6} ${mainW / 2},${mainH * 0.6}`}
                         fill={styleConfig.mountainColor}
                         stroke={baseStyle.mountainStroke || styleConfig.textColor}
-                        strokeWidth={1.5}
+                        strokeWidth={1.4}
                         strokeLinejoin="round"
                       />
                       {/* Left light facet */}
                       <polygon
                         points={`0,-${mainH} -${mainW / 2},${mainH * 0.6} 0,${mainH * 0.5}`}
                         fill="#ffffff"
-                        opacity={isDark ? 0.25 : 0.45}
+                        opacity={isDark ? 0.25 : 0.4}
                       />
                       {/* Central Hand-Drawn Ridgeline */}
                       <path
@@ -656,7 +610,7 @@ export const MapCanvas: React.FC<MapCanvasProps> = ({
                 fontWeight="bold"
                 fontFamily="Cinzel, serif"
                 letterSpacing="2"
-                opacity={0.85}
+                opacity={0.8}
               >
                 {mountainRangeData.rangeLabel.text}
               </text>
@@ -667,7 +621,7 @@ export const MapCanvas: React.FC<MapCanvasProps> = ({
                 fontWeight="bold"
                 fontFamily="Cinzel, serif"
                 letterSpacing="2"
-                opacity={0.85}
+                opacity={0.8}
               >
                 {mountainRangeData.rangeLabel.text}
               </text>
@@ -873,17 +827,18 @@ export const MapCanvas: React.FC<MapCanvasProps> = ({
             </g>
           )}
 
-          {/* 14. GRID OVERLAY */}
-          {layers.grid && <rect width={map.width} height={map.height} fill="url(#grid-pattern)" pointerEvents="none" />}
+          {/* 14. EDITOR-ONLY GRID OVERLAY (NEVER drawn in final preview or exports!) */}
+          {layers.grid && !isPreviewMode && activeTool === 'select' && (
+            <rect width={map.width} height={map.height} fill="url(#grid-pattern)" pointerEvents="none" />
+          )}
 
-          {/* 15. COMPASS ROSE */}
+          {/* 15. COMPASS ROSE (Restrained & Inside Bounds) */}
           {layers.compass && (
             <g transform={`translate(${map.width - 85}, 85)`} pointerEvents="none">
-              <circle r={32} fill="none" stroke={styleConfig.textColor} strokeWidth={1.5} opacity={0.5} />
-              <circle r={36} fill="none" stroke={styleConfig.textColor} strokeWidth={0.8} opacity={0.3} strokeDasharray="2,2" />
-              <polygon points="0,-32 5,-5 32,0 5,5 0,32 -5,5 -32,0 -5,-5" fill={styleConfig.textColor} opacity={0.85} />
-              <polygon points="0,-32 0,0 5,-5" fill="#ffffff" opacity={0.5} />
-              <text y={-38} textAnchor="middle" fill={styleConfig.textColor} fontSize={12} fontWeight="bold" fontFamily="Cinzel, serif">
+              <circle r={30} fill="none" stroke={styleConfig.textColor} strokeWidth={1.2} opacity={0.45} />
+              <polygon points="0,-30 4,-4 30,0 4,4 0,30 -4,4 -30,0 -4,-4" fill={styleConfig.textColor} opacity={0.8} />
+              <polygon points="0,-30 0,0 4,-4" fill="#ffffff" opacity={0.5} />
+              <text y={-35} textAnchor="middle" fill={styleConfig.textColor} fontSize={11} fontWeight="bold" fontFamily="Cinzel, serif">
                 N
               </text>
             </g>
@@ -892,29 +847,28 @@ export const MapCanvas: React.FC<MapCanvasProps> = ({
           {/* 16. SCALE BAR */}
           <g transform={`translate(60, ${map.height - 40})`} pointerEvents="none">
             <rect x={-4} y={-16} width={108} height={24} fill={isDark ? '#0f172a' : '#fef3c7'} fillOpacity={0.6} rx={4} stroke={styleConfig.textColor} strokeWidth={0.5} />
-            <line x1={0} y1={0} x2={100} y2={0} stroke={styleConfig.textColor} strokeWidth={3} />
-            <line x1={0} y1={-4} x2={0} y2={4} stroke={styleConfig.textColor} strokeWidth={2} />
-            <line x1={50} y1={-3} x2={50} y2={3} stroke={styleConfig.textColor} strokeWidth={1.5} />
-            <line x1={100} y1={-4} x2={100} y2={4} stroke={styleConfig.textColor} strokeWidth={2} />
+            <line x1={0} y1={0} x2={100} y2={0} stroke={styleConfig.textColor} strokeWidth={2.5} />
+            <line x1={0} y1={-4} x2={0} y2={4} stroke={styleConfig.textColor} strokeWidth={1.8} />
+            <line x1={50} y1={-3} x2={50} y2={3} stroke={styleConfig.textColor} strokeWidth={1.2} />
+            <line x1={100} y1={-4} x2={100} y2={4} stroke={styleConfig.textColor} strokeWidth={1.8} />
             <text x={50} y={-8} textAnchor="middle" fill={styleConfig.textColor} fontSize={10} fontFamily="Cinzel, serif" fontWeight="bold">
               100 Miles
             </text>
           </g>
 
-          {/* 17. DECORATIVE TITLE BANNER (Safe Positioning — NEVER Clipped!) */}
+          {/* 17. PRIMARY MAP TITLE BANNER (THE REALMS OF ELDORIA - Safe Top Margin, NEVER Clipped!) */}
           {isRenderableLabel(map.titleBannerText || map.name) && (
             <g transform={`translate(${map.width / 2}, 60)`} pointerEvents="none">
-              <rect x={-170} y={-20} width={340} height={42} fill={isDark ? '#0f172a' : '#fef3c7'} fillOpacity={0.92} stroke="#d4af37" strokeWidth={2} rx={8} />
+              <rect x={-165} y={-20} width={330} height={42} fill={isDark ? '#0f172a' : '#fef3c7'} fillOpacity={0.92} stroke="#d4af37" strokeWidth={1.8} rx={8} />
               <text y={6} textAnchor="middle" fill="#d4af37" fontSize={15} fontWeight="bold" fontFamily="Cinzel, serif" letterSpacing="1.5">
                 {(map.titleBannerText || map.name).toUpperCase()}
               </text>
             </g>
           )}
 
-          {/* 18. CLASSIC FANTASY ATLAS OUTER DOUBLE BORDER FRAME */}
+          {/* 18. RESTRAINED SINGLE CARTOGRAPHY MAP BORDER */}
           <g id="cartography-outer-border-frame" pointerEvents="none">
-            <rect x={10} y={10} width={map.width - 20} height={map.height - 20} stroke={styleConfig.borderColor} strokeWidth={2} fill="none" opacity={0.7} rx={4} />
-            <rect x={14} y={14} width={map.width - 28} height={map.height - 28} stroke={styleConfig.borderColor} strokeWidth={1} strokeDasharray="8,4" fill="none" opacity={0.5} rx={3} />
+            <rect x={12} y={12} width={map.width - 24} height={map.height - 24} stroke={styleConfig.borderColor} strokeWidth={1.2} fill="none" opacity={0.45} rx={4} />
           </g>
 
           {/* Vignette Overlay for Depth */}
