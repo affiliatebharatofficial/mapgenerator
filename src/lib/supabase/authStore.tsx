@@ -1,6 +1,7 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
 import type { FantasyMap } from '../../types/map';
 import { loadMapFromLocalStorage } from '../storage/mapStorage';
+import { supabase, isSupabaseConfigured } from './client';
 
 export interface UserProfile {
   id: string;
@@ -102,6 +103,54 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     }
   }, [user]);
 
+  useEffect(() => {
+    if (!isSupabaseConfigured) return;
+
+    // Helper to map Supabase user metadata to app UserAccount & UserProfile
+    const handleSupabaseUser = (suUser: any) => {
+      if (!suUser) return;
+      const email = suUser.email || 'user@google.com';
+      const name = suUser.user_metadata?.full_name || suUser.user_metadata?.name || email.split('@')[0];
+      const avatar = suUser.user_metadata?.avatar_url || suUser.user_metadata?.picture || `https://api.dicebear.com/7.x/bottts/svg?seed=${name}`;
+      const username = suUser.user_metadata?.preferred_username || email.split('@')[0].toLowerCase().replace(/[^a-z0-9_]/g, '_');
+      const role = ADMIN_EMAILS.includes(email.toLowerCase()) ? 'admin' : 'user';
+
+      const newUser: UserAccount = { id: suUser.id, email, role };
+      const newProfile: UserProfile = {
+        id: suUser.id,
+        user_id: suUser.id,
+        display_name: name,
+        username,
+        avatar_url: avatar,
+        bio: 'Cartographer & Worldbuilder on CreateFantasyMap',
+        role,
+        created_at: suUser.created_at || new Date().toISOString()
+      };
+
+      setUser(newUser);
+      setProfile(newProfile);
+      localStorage.setItem(LOCAL_USER_KEY, JSON.stringify(newUser));
+      localStorage.setItem(LOCAL_PROFILE_KEY, JSON.stringify(newProfile));
+      saveToUserRegistry(newUser, newProfile);
+    };
+
+    supabase.auth.getSession().then(({ data: { session } }) => {
+      if (session?.user) {
+        handleSupabaseUser(session.user);
+      }
+    });
+
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
+      if (session?.user) {
+        handleSupabaseUser(session.user);
+      }
+    });
+
+    return () => {
+      subscription.unsubscribe();
+    };
+  }, []);
+
   const login = async (email: string, password: string) => {
     setIsLoading(true);
     try {
@@ -181,25 +230,54 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   };
 
   const loginWithGoogle = async () => {
-    const mockUserId = `user_google_${Date.now().toString(36)}`;
-    const newUser: UserAccount = { id: mockUserId, email: 'explorer@createfantasymap.com' };
-    const newProfile: UserProfile = {
-      id: mockUserId,
-      user_id: mockUserId,
-      display_name: 'Fantasy Explorer',
-      username: 'fantasy_explorer',
-      avatar_url: 'https://api.dicebear.com/7.x/bottts/svg?seed=fantasy_explorer',
-      bio: 'Creating worlds with CreateFantasyMap AI Engine',
-      created_at: new Date().toISOString()
-    };
+    setIsLoading(true);
+    try {
+      if (isSupabaseConfigured) {
+        const { error } = await supabase.auth.signInWithOAuth({
+          provider: 'google',
+          options: {
+            redirectTo: window.location.origin
+          }
+        });
+        if (error) {
+          console.error('Supabase Google OAuth error:', error);
+        } else {
+          return;
+        }
+      }
 
-    setUser(newUser);
-    setProfile(newProfile);
-    localStorage.setItem(LOCAL_USER_KEY, JSON.stringify(newUser));
-    localStorage.setItem(LOCAL_PROFILE_KEY, JSON.stringify(newProfile));
+      // Fallback/Demo mode when Supabase is not configured or in dev mode
+      const mockUserId = `user_google_${Date.now().toString(36)}`;
+      const mockEmail = `explorer_${Math.floor(Math.random() * 1000)}@gmail.com`;
+      const newUser: UserAccount = { id: mockUserId, email: mockEmail };
+      const newProfile: UserProfile = {
+        id: mockUserId,
+        user_id: mockUserId,
+        display_name: 'Google Cartographer',
+        username: `google_explorer_${Date.now().toString(36).substring(4)}`,
+        avatar_url: 'https://lh3.googleusercontent.com/a/default-user=s96-c',
+        bio: 'Creating worlds with CreateFantasyMap AI Engine via Google Auth',
+        created_at: new Date().toISOString()
+      };
+
+      setUser(newUser);
+      setProfile(newProfile);
+      localStorage.setItem(LOCAL_USER_KEY, JSON.stringify(newUser));
+      localStorage.setItem(LOCAL_PROFILE_KEY, JSON.stringify(newProfile));
+      saveToUserRegistry(newUser, newProfile);
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   const logout = async () => {
+    if (isSupabaseConfigured) {
+      try {
+        await supabase.auth.signOut();
+      } catch (err) {
+        console.error('Supabase sign out error:', err);
+      }
+    }
     setUser(null);
     setProfile(null);
     localStorage.removeItem(LOCAL_USER_KEY);
