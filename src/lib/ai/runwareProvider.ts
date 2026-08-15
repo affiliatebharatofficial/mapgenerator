@@ -174,21 +174,17 @@ export const RunwareImageProvider = {
       }
     }
 
-    // High quality fallback proxy if API key is demo/testing
-    await new Promise((r) => setTimeout(r, 1000));
-    const fallbackImages = [
-      'https://images.unsplash.com/photo-1518709268805-4e9042af9f23?w=1024&h=1024&fit=crop',
-      'https://images.unsplash.com/photo-1578632767115-351597cf2477?w=1024&h=1024&fit=crop',
-      'https://images.unsplash.com/photo-1544947950-fa07a98d237f?w=1024&h=1024&fit=crop'
-    ];
-    const selectedUrl = fallbackImages[Math.floor(Math.random() * fallbackImages.length)];
+    // Real-time AI Image Generation Engine (Pollinations FLUX Model fallback when no API key configured)
+    const seed = params.seed || Math.floor(Math.random() * 1000000);
+    const cleanPrompt = encodeURIComponent(params.prompt.trim());
+    const pollinationsUrl = `https://image.pollinations.ai/prompt/${cleanPrompt}?width=${w}&height=${h}&seed=${seed}&model=flux&nologo=true`;
 
     return {
-      imageUrl: selectedUrl,
+      imageUrl: pollinationsUrl,
       taskId: taskUUID,
-      provider: 'Runware AI (FLUX.1)',
+      provider: 'AI Generation Engine (FLUX)',
       model: targetModel,
-      providerCost: 0.0015,
+      providerCost: 0,
       durationMs: Date.now() - startTime,
       width: w,
       height: h,
