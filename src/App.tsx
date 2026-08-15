@@ -630,6 +630,17 @@ function AppRouter() {
   }
 
   if (path === '/create') {
+    if (!isAuthenticated) {
+      return (
+        <LoginPage
+          onNavigateHome={() => navigate('/')}
+          onNavigateSignup={() => navigate('/signup')}
+          onNavigateForgotPassword={() => navigate('/forgot-password')}
+          onLoginSuccess={() => navigate('/create')}
+        />
+      );
+    }
+
     return (
       <CreatePage
         onBackToHome={() => navigate('/')}
