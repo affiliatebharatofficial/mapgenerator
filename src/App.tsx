@@ -20,8 +20,6 @@ import { FeedPage } from './pages/FeedPage';
 import { PublicCollectionPage } from './pages/PublicCollectionPage';
 import { NotificationsPage } from './pages/NotificationsPage';
 import { CommunityGuidelinesPage } from './pages/CommunityGuidelinesPage';
-import { CampaignsListPage } from './pages/campaign/CampaignsListPage';
-import { CampaignDashboardPage } from './pages/campaign/CampaignDashboardPage';
 import { SeoLandingPage } from './pages/seo/SeoLandingPage';
 import { StyleLandingPage } from './pages/seo/StyleLandingPage';
 import { UseCaseLandingPage } from './pages/seo/UseCaseLandingPage';
@@ -34,8 +32,6 @@ import { AdminDashboardPage } from './pages/admin/AdminDashboardPage';
 import { ExportStudioPage } from './pages/export/ExportStudioPage';
 import { ExportHistoryPage } from './pages/export/ExportHistoryPage';
 import { WorldBiblePage } from './pages/world/WorldBiblePage';
-import { AdventureBuilderPage } from './pages/campaigns/AdventureBuilderPage';
-import { CampaignWorkspacePage } from './pages/campaigns/CampaignWorkspacePage';
 import { ImageStudioPage } from './pages/image-studio/ImageStudioPage';
 import { SeoService } from './lib/seo/seoService';
 import type { MapStyle, MapType } from './types/map';
@@ -187,57 +183,6 @@ function AppRouter() {
     );
   }
 
-  // Phase 10 RPG Campaign Routes
-  if (path === '/campaigns') {
-    if (!isAuthenticated) {
-      return (
-        <LoginPage
-          onNavigateHome={() => navigate('/')}
-          onNavigateSignup={() => navigate('/signup')}
-          onNavigateForgotPassword={() => navigate('/forgot-password')}
-          onLoginSuccess={() => navigate('/campaigns')}
-        />
-      );
-    }
-
-    return (
-      <CampaignsListPage
-        onNavigateCreate={() => {
-          setEditingMapId(null);
-          setPresetConfig(null);
-          navigate('/create');
-        }}
-        onNavigateHome={() => navigate('/')}
-        onOpenCampaign={(campaignId) => navigate(`/campaign/${campaignId}`)}
-      />
-    );
-  }
-
-  if (path.startsWith('/campaign/')) {
-    if (!isAuthenticated) {
-      return (
-        <LoginPage
-          onNavigateHome={() => navigate('/')}
-          onNavigateSignup={() => navigate('/signup')}
-          onNavigateForgotPassword={() => navigate('/forgot-password')}
-          onLoginSuccess={() => navigate(path)}
-        />
-      );
-    }
-
-    const campaignId = path.replace('/campaign/', '');
-    return (
-      <CampaignDashboardPage
-        campaignId={campaignId}
-        onNavigateCreate={() => {
-          setEditingMapId(null);
-          setPresetConfig(null);
-          navigate('/create');
-        }}
-        onNavigateHome={() => navigate('/')}
-      />
-    );
-  }
 
   // Phase 12 Export Studio Routes
   if (path === '/export' || (path.startsWith('/world/') && path.endsWith('/export'))) {
@@ -396,35 +341,6 @@ function AppRouter() {
     );
   }
 
-  if (path.startsWith('/campaigns/') && path.endsWith('/adventure')) {
-    const campaignId = path.replace('/campaigns/', '').replace('/adventure', '');
-    return (
-      <AdventureBuilderPage
-        campaignId={campaignId}
-        onNavigateCreate={() => {
-          setEditingMapId(null);
-          setPresetConfig(null);
-          navigate('/create');
-        }}
-        onNavigateHome={() => navigate('/')}
-      />
-    );
-  }
-
-  if (path.startsWith('/campaign/') && !path.includes('/adventure')) {
-    const campaignId = path.replace('/campaign/', '');
-    return (
-      <CampaignWorkspacePage
-        campaignId={campaignId}
-        onNavigateCreate={() => {
-          setEditingMapId(null);
-          setPresetConfig(null);
-          navigate('/create');
-        }}
-        onNavigateHome={() => navigate('/')}
-      />
-    );
-  }
 
   // Phase 5 Worldbuilding Routes
   if (path === '/worlds') {

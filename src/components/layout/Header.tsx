@@ -110,16 +110,6 @@ export const Header: React.FC<HeaderProps> = ({
 
           {isAuthenticated && (
             <button
-              onClick={() => (window.location.pathname = '/campaigns')}
-              className="hover:text-amber-400 transition-colors flex items-center gap-1.5 text-amber-400 whitespace-nowrap"
-            >
-              <Shield className="w-3.5 h-3.5" />
-              <span>Campaigns</span>
-            </button>
-          )}
-
-          {isAuthenticated && (
-            <button
               onClick={() => (window.location.pathname = '/image-studio')}
               className="hover:text-amber-400 transition-colors flex items-center gap-1.5 text-amber-300 whitespace-nowrap"
             >
