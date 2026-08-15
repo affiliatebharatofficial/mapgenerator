@@ -22,38 +22,8 @@ const COMMENTS_STORAGE_KEY = 'createfantasymap_comments_db';
 const NOTIFICATIONS_STORAGE_KEY = 'createfantasymap_notifications_db';
 const WORLD_LIKES_STORAGE_KEY = 'createfantasymap_world_likes_db';
 
-// Initial Mock Notifications
-const INITIAL_NOTIFICATIONS: Notification[] = [
-  {
-    id: 'notif_1',
-    user_id: 'user_master_cartographer',
-    type: 'follow',
-    actor_id: 'usr_lyra',
-    actor_name: 'Lyra Nightshade',
-    actor_username: 'lyra_maps',
-    actor_avatar: 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=100&h=100&fit=crop&crop=faces',
-    target_type: 'user',
-    target_id: 'user_master_cartographer',
-    message: 'started following your cartography profile.',
-    read_at: null,
-    created_at: new Date(Date.now() - 3600000).toISOString()
-  },
-  {
-    id: 'notif_2',
-    user_id: 'user_master_cartographer',
-    type: 'map_like',
-    actor_id: 'usr_garreth',
-    actor_name: 'Sir Garreth',
-    actor_username: 'garreth_knight',
-    actor_avatar: 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=100&h=100&fit=crop&crop=faces',
-    target_type: 'map',
-    target_id: 'map_eldoria',
-    target_title: 'The Continent of Eldoria',
-    message: 'liked your map "The Continent of Eldoria".',
-    read_at: null,
-    created_at: new Date(Date.now() - 86400000).toISOString()
-  }
-];
+// Initial Notifications Store
+const INITIAL_NOTIFICATIONS: Notification[] = [];
 
 export const CommunityService = {
   // ----------------------------------------------------
@@ -252,18 +222,7 @@ export const CommunityService = {
   // ----------------------------------------------------
   getComments(): Comment[] {
     const data = localStorage.getItem(COMMENTS_STORAGE_KEY);
-    return data ? JSON.parse(data) : [
-      {
-        id: 'cmt_1',
-        user_id: 'usr_lyra',
-        map_id: 'map_eldoria',
-        content: 'The coastline detailing on the northern mountain pass is stunning! Excellent cartography.',
-        created_at: new Date(Date.now() - 7200000).toISOString(),
-        author_name: 'Lyra Nightshade',
-        author_username: 'lyra_maps',
-        author_avatar: 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=100&h=100&fit=crop&crop=faces'
-      }
-    ];
+    return data ? JSON.parse(data) : [];
   },
 
   saveComments(comments: Comment[]) {
@@ -328,7 +287,7 @@ export const CommunityService = {
   },
 
   getUserNotifications(userId: string): Notification[] {
-    return this.getNotifications().filter((n) => n.user_id === userId || n.user_id === 'user_master_cartographer');
+    return this.getNotifications().filter((n) => n.user_id === userId);
   },
 
   addNotification(notif: Omit<Notification, 'id' | 'created_at'>) {

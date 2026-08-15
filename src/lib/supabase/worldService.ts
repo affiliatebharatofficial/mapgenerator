@@ -225,7 +225,7 @@ export const WorldService = {
 
   async getUserWorlds(userId: string): Promise<World[]> {
     const worlds = getStoredArray<World>(WORLDS_KEY, [INITIAL_SHOWCASE_WORLD]);
-    return worlds.filter((w) => w.userId === userId || w.isPublic);
+    return worlds.filter((w) => w.userId === userId);
   },
 
   async getWorldById(worldId: string): Promise<World | null> {

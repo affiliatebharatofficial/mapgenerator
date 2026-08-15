@@ -34,7 +34,7 @@ export const CampaignService = {
   getUserCampaigns(userId: string): Campaign[] {
     const data = localStorage.getItem(CAMPAIGNS_KEY);
     const list: Campaign[] = data ? JSON.parse(data) : [];
-    return list.filter((c) => c.userId === userId || userId === 'user_current');
+    return list.filter((c) => c.userId === userId);
   },
 
   getCampaignById(id: string): Campaign | undefined {
