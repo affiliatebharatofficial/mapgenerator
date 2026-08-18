@@ -201,10 +201,11 @@ export const Toolbar: React.FC<ToolbarProps> = ({
 
         <button
           onClick={onRandomSeed}
-          className="p-2 text-slate-400 hover:text-amber-300 rounded-lg transition-colors"
-          title="Randomize Seed"
+          className="p-2 bg-amber-500/10 hover:bg-amber-500/20 text-amber-300 border border-amber-500/30 rounded-lg transition-colors flex items-center gap-1.5 text-xs font-semibold"
+          title="Generate New Random Fantasy Map"
         >
-          <Dices className="w-4 h-4" />
+          <Dices className="w-4 h-4 text-amber-400" />
+          <span>New Map</span>
         </button>
       </div>
 
