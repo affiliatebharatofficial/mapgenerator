@@ -34,8 +34,12 @@ export const SignupPage: React.FC<SignupPageProps> = ({
   };
 
   const handleGoogleClick = async () => {
-    await loginWithGoogle();
-    onSignupSuccess();
+    try {
+      setErrorMessage('');
+      await loginWithGoogle();
+    } catch (err: any) {
+      setErrorMessage(err?.message || 'Failed to initialize Google Sign Up. Please try again.');
+    }
   };
 
   return (

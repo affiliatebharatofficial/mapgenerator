@@ -1,4 +1,4 @@
-import React, { createContext, useContext, useState, useEffect } from 'react';
+import React, { createContext, useContext, useState, useEffect, useCallback } from 'react';
 import type { FantasyMap } from '../../types/map';
 import { loadMapFromLocalStorage } from '../storage/mapStorage';
 import { supabase, isSupabaseConfigured } from './client';
@@ -95,6 +95,44 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const [isLoading, setIsLoading] = useState(false);
   const [hasGuestMap, setHasGuestMap] = useState<boolean>(false);
 
+  // Helper to map Supabase user to UserAccount and UserProfile
+  const handleSupabaseUser = useCallback((suUser: any) => {
+    if (!suUser) return;
+    const email = suUser.email || '';
+    const name =
+      suUser.user_metadata?.full_name ||
+      suUser.user_metadata?.name ||
+      suUser.user_metadata?.display_name ||
+      (email ? email.split('@')[0] : 'Adventurer');
+    const username =
+      suUser.user_metadata?.preferred_username ||
+      suUser.user_metadata?.username ||
+      (email ? email.split('@')[0].toLowerCase().replace(/[^a-z0-9_]/g, '_') : `user_${suUser.id.substring(0, 8)}`);
+    const avatar =
+      suUser.user_metadata?.avatar_url ||
+      suUser.user_metadata?.picture ||
+      `https://api.dicebear.com/7.x/bottts/svg?seed=${encodeURIComponent(username)}`;
+    const role: 'admin' | 'user' = (email && ADMIN_EMAILS.includes(email.toLowerCase())) ? 'admin' : 'user';
+
+    const newUser: UserAccount = { id: suUser.id, email, role };
+    const newProfile: UserProfile = {
+      id: suUser.id,
+      user_id: suUser.id,
+      display_name: name,
+      username,
+      avatar_url: avatar,
+      bio: role === 'admin' ? 'System Administrator & Master Cartographer' : 'Cartographer & Worldbuilder on CreateFantasyMap',
+      role,
+      created_at: suUser.created_at || new Date().toISOString()
+    };
+
+    setUser(newUser);
+    setProfile(newProfile);
+    localStorage.setItem(LOCAL_USER_KEY, JSON.stringify(newUser));
+    localStorage.setItem(LOCAL_PROFILE_KEY, JSON.stringify(newProfile));
+    saveToUserRegistry(newUser, newProfile);
+  }, []);
+
   useEffect(() => {
     // Check if there is an existing map created in guest local storage
     const guestMap = loadMapFromLocalStorage();
@@ -106,35 +144,11 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   useEffect(() => {
     if (!isSupabaseConfigured) return;
 
-    // Helper to map Supabase user metadata to app UserAccount & UserProfile
-    const handleSupabaseUser = (suUser: any) => {
-      if (!suUser) return;
-      const email = suUser.email || 'user@google.com';
-      const name = suUser.user_metadata?.full_name || suUser.user_metadata?.name || email.split('@')[0];
-      const avatar = suUser.user_metadata?.avatar_url || suUser.user_metadata?.picture || `https://api.dicebear.com/7.x/bottts/svg?seed=${name}`;
-      const username = suUser.user_metadata?.preferred_username || email.split('@')[0].toLowerCase().replace(/[^a-z0-9_]/g, '_');
-      const role = ADMIN_EMAILS.includes(email.toLowerCase()) ? 'admin' : 'user';
-
-      const newUser: UserAccount = { id: suUser.id, email, role };
-      const newProfile: UserProfile = {
-        id: suUser.id,
-        user_id: suUser.id,
-        display_name: name,
-        username,
-        avatar_url: avatar,
-        bio: 'Cartographer & Worldbuilder on CreateFantasyMap',
-        role,
-        created_at: suUser.created_at || new Date().toISOString()
-      };
-
-      setUser(newUser);
-      setProfile(newProfile);
-      localStorage.setItem(LOCAL_USER_KEY, JSON.stringify(newUser));
-      localStorage.setItem(LOCAL_PROFILE_KEY, JSON.stringify(newProfile));
-      saveToUserRegistry(newUser, newProfile);
-    };
-
-    supabase.auth.getSession().then(({ data: { session } }) => {
+    // Listen to Supabase auth state changes (OAuth redirect, session refresh, signin)
+    supabase.auth.getSession().then(({ data: { session }, error }) => {
+      if (error) {
+        console.error('Error fetching Supabase session:', error);
+      }
       if (session?.user) {
         handleSupabaseUser(session.user);
       }
@@ -143,13 +157,18 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
       if (session?.user) {
         handleSupabaseUser(session.user);
+      } else if (_event === 'SIGNED_OUT') {
+        setUser(null);
+        setProfile(null);
+        localStorage.removeItem(LOCAL_USER_KEY);
+        localStorage.removeItem(LOCAL_PROFILE_KEY);
       }
     });
 
     return () => {
       subscription.unsubscribe();
     };
-  }, []);
+  }, [handleSupabaseUser]);
 
   const login = async (email: string, password: string) => {
     setIsLoading(true);
@@ -158,29 +177,22 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         return { success: false, error: 'Please enter valid email and password.' };
       }
 
-      const mockUserId = `user_${Date.now().toString(36)}`;
-      const mockUsername = email.split('@')[0].toLowerCase().replace(/[^a-z0-9_]/g, '_');
-      const role = ADMIN_EMAILS.includes(email.toLowerCase()) ? 'admin' : 'user';
+      const { data, error } = await supabase.auth.signInWithPassword({
+        email: email.trim(),
+        password
+      });
 
-      const newUser: UserAccount = { id: mockUserId, email, role };
-      const newProfile: UserProfile = {
-        id: mockUserId,
-        user_id: mockUserId,
-        display_name: email.split('@')[0],
-        username: mockUsername,
-        avatar_url: `https://api.dicebear.com/7.x/bottts/svg?seed=${mockUsername}`,
-        bio: role === 'admin' ? 'System Administrator & Master Cartographer' : 'Cartographer & Worldbuilder on CreateFantasyMap.com',
-        role,
-        created_at: new Date().toISOString()
-      };
+      if (error) {
+        return { success: false, error: error.message };
+      }
 
-      setUser(newUser);
-      setProfile(newProfile);
-      localStorage.setItem(LOCAL_USER_KEY, JSON.stringify(newUser));
-      localStorage.setItem(LOCAL_PROFILE_KEY, JSON.stringify(newProfile));
-      saveToUserRegistry(newUser, newProfile);
+      if (data?.user) {
+        handleSupabaseUser(data.user);
+      }
 
       return { success: true };
+    } catch (err: any) {
+      return { success: false, error: err?.message || 'Login failed. Please try again.' };
     } finally {
       setIsLoading(false);
     }
@@ -203,27 +215,29 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         return { success: false, error: 'Password must be at least 6 characters long.' };
       }
 
-      const mockUserId = `user_${Date.now().toString(36)}`;
-      const role = ADMIN_EMAILS.includes(email.toLowerCase()) ? 'admin' : 'user';
-      const newUser: UserAccount = { id: mockUserId, email, role };
-      const newProfile: UserProfile = {
-        id: mockUserId,
-        user_id: mockUserId,
-        display_name: displayName || cleanUsername,
-        username: cleanUsername,
-        avatar_url: `https://api.dicebear.com/7.x/bottts/svg?seed=${cleanUsername}`,
-        bio: role === 'admin' ? 'System Administrator & Master Cartographer' : 'Cartographer & Worldbuilder on CreateFantasyMap.com',
-        role,
-        created_at: new Date().toISOString()
-      };
+      const { data, error } = await supabase.auth.signUp({
+        email: email.trim(),
+        password,
+        options: {
+          data: {
+            full_name: displayName || cleanUsername,
+            username: cleanUsername,
+            display_name: displayName || cleanUsername
+          }
+        }
+      });
 
-      setUser(newUser);
-      setProfile(newProfile);
-      localStorage.setItem(LOCAL_USER_KEY, JSON.stringify(newUser));
-      localStorage.setItem(LOCAL_PROFILE_KEY, JSON.stringify(newProfile));
-      saveToUserRegistry(newUser, newProfile);
+      if (error) {
+        return { success: false, error: error.message };
+      }
+
+      if (data?.user) {
+        handleSupabaseUser(data.user);
+      }
 
       return { success: true };
+    } catch (err: any) {
+      return { success: false, error: err?.message || 'Signup failed. Please try again.' };
     } finally {
       setIsLoading(false);
     }
@@ -232,51 +246,31 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const loginWithGoogle = async () => {
     setIsLoading(true);
     try {
-      if (isSupabaseConfigured) {
-        const { error } = await supabase.auth.signInWithOAuth({
-          provider: 'google',
-          options: {
-            redirectTo: window.location.origin
-          }
-        });
-        if (error) {
-          console.error('Supabase Google OAuth error:', error);
-        } else {
-          return;
+      const currentOrigin = window.location.origin;
+      const { error } = await supabase.auth.signInWithOAuth({
+        provider: 'google',
+        options: {
+          redirectTo: currentOrigin
         }
+      });
+
+      if (error) {
+        console.error('Supabase Google OAuth error:', error);
+        throw error;
       }
-
-      // Fallback/Demo mode when Supabase is not configured or in dev mode
-      const mockUserId = `user_google_${Date.now().toString(36)}`;
-      const mockEmail = `explorer_${Math.floor(Math.random() * 1000)}@gmail.com`;
-      const newUser: UserAccount = { id: mockUserId, email: mockEmail };
-      const newProfile: UserProfile = {
-        id: mockUserId,
-        user_id: mockUserId,
-        display_name: 'Google Cartographer',
-        username: `google_explorer_${Date.now().toString(36).substring(4)}`,
-        avatar_url: 'https://lh3.googleusercontent.com/a/default-user=s96-c',
-        bio: 'Creating worlds with CreateFantasyMap AI Engine via Google Auth',
-        created_at: new Date().toISOString()
-      };
-
-      setUser(newUser);
-      setProfile(newProfile);
-      localStorage.setItem(LOCAL_USER_KEY, JSON.stringify(newUser));
-      localStorage.setItem(LOCAL_PROFILE_KEY, JSON.stringify(newProfile));
-      saveToUserRegistry(newUser, newProfile);
+    } catch (err: any) {
+      console.error('Google Sign In Error:', err);
+      throw err;
     } finally {
       setIsLoading(false);
     }
   };
 
   const logout = async () => {
-    if (isSupabaseConfigured) {
-      try {
-        await supabase.auth.signOut();
-      } catch (err) {
-        console.error('Supabase sign out error:', err);
-      }
+    try {
+      await supabase.auth.signOut();
+    } catch (err) {
+      console.error('Supabase sign out error:', err);
     }
     setUser(null);
     setProfile(null);
@@ -285,7 +279,17 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   };
 
   const resetPassword = async (email: string) => {
-    return { success: true, message: `Password reset link sent to ${email}` };
+    try {
+      const { error } = await supabase.auth.resetPasswordForEmail(email.trim(), {
+        redirectTo: `${window.location.origin}/reset-password`
+      });
+      if (error) {
+        return { success: false, message: error.message };
+      }
+      return { success: true, message: `Password reset link sent to ${email}` };
+    } catch (err: any) {
+      return { success: false, message: err?.message || 'Failed to send password reset link.' };
+    }
   };
 
   const updateProfile = async (updates: Partial<UserProfile>) => {
