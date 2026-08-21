@@ -465,28 +465,16 @@ export const CreatePage: React.FC<CreatePageProps> = ({
     return true;
   };
 
-  // Change Config State & Generate when Type or Density changes
+  // Change Config State without auto-resetting procedural map
   const handleChangeConfig = useCallback(
     (newConfig: GeneratorConfig) => {
-      const typeChanged = newConfig.type !== config.type;
-      const densityChanged =
-        newConfig.mountainDensity !== config.mountainDensity ||
-        newConfig.forestDensity !== config.forestDensity ||
-        newConfig.kingdomCount !== config.kingdomCount;
-
       setConfig(newConfig);
-
-      if (typeChanged || densityChanged) {
-        // Automatically generate fresh map for the new map type / density
-        const newMap = generateFantasyMap(newConfig);
-        pushState(newMap);
-        setSelectedObject(null);
-      } else if (newConfig.style !== currentMap.style) {
-        // If only visual style theme changed, apply style in-place without resetting terrain/objects
+      // If visual style theme changed, apply style in-place without resetting terrain/objects
+      if (newConfig.style !== currentMap.style) {
         pushState({ ...currentMap, style: newConfig.style });
       }
     },
-    [config, currentMap, pushState]
+    [currentMap, pushState]
   );
 
   // Generate Map Action (Picks brand new seed)

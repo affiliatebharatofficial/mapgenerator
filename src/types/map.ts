@@ -45,6 +45,7 @@ export interface Position {
   id?: string;
   height?: number;
   size?: number;
+  rangeId?: string;
 }
 
 export interface Settlement {
