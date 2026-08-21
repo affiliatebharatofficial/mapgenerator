@@ -276,17 +276,19 @@ export function generateFantasyMap(config: GeneratorConfig): FantasyMap {
     }
   }
 
-  // Mountains list
+  // Mountains list with strict canvas boundary clamping
   const mountains: Position[] = [];
   mtnRanges.forEach((range) => {
     range.ridgePoints.forEach((pt) => {
-      mountains.push({
-        id: `m_${pt.x}_${pt.y}`,
-        x: pt.x,
-        y: pt.y,
-        height: 22 + Math.floor(prng() * 10),
-        size: 16
-      });
+      if (pt.x >= 24 && pt.x <= width - 24 && pt.y >= 24 && pt.y <= height - 24) {
+        mountains.push({
+          id: `m_${Math.round(pt.x)}_${Math.round(pt.y)}`,
+          x: Math.round(pt.x),
+          y: Math.round(pt.y),
+          height: 22 + Math.floor(prng() * 10),
+          size: 16
+        });
+      }
     });
   });
 
@@ -439,13 +441,15 @@ export function updateFeatureDensities(currentMap: FantasyMap, newConfig: Genera
     const mountains: Position[] = [];
     mtnRanges.forEach((range) => {
       range.ridgePoints.forEach((pt) => {
-        mountains.push({
-          id: `m_${pt.x}_${pt.y}`,
-          x: pt.x,
-          y: pt.y,
-          height: 22 + Math.floor(prng() * 10),
-          size: 16
-        });
+        if (pt.x >= 24 && pt.x <= width - 24 && pt.y >= 24 && pt.y <= height - 24) {
+          mountains.push({
+            id: `m_${Math.round(pt.x)}_${Math.round(pt.y)}`,
+            x: Math.round(pt.x),
+            y: Math.round(pt.y),
+            height: 22 + Math.floor(prng() * 10),
+            size: 16
+          });
+        }
       });
     });
     updatedMap.mountains = mountains;
