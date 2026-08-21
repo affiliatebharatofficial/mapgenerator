@@ -400,6 +400,113 @@ export function generateFantasyMap(config: GeneratorConfig): FantasyMap {
   };
 }
 
+export function updateFeatureDensities(currentMap: FantasyMap, newConfig: GeneratorConfig): FantasyMap {
+  const seed = currentMap.seed || 123456;
+  const width = currentMap.width || 1200;
+  const height = currentMap.height || 800;
+  const cx = width / 2;
+  const cy = height / 2;
+  const prng = createPRNG(seed);
+
+  const updatedMap: FantasyMap = {
+    ...currentMap,
+    updatedAt: new Date().toISOString()
+  };
+
+  // 1. Update Mountains Density if changed
+  if (newConfig.mountainDensity !== undefined) {
+    const geoConfig: AdvancedGeographyConfig = {
+      seed,
+      profile: 'balanced-fantasy',
+      realismLevel: 75,
+      landmassAmount: 6,
+      mountainDensity: newConfig.mountainDensity,
+      riverDensity: newConfig.riverDensity || 5,
+      forestDensity: newConfig.forestDensity || 5,
+      settlementDensity: 5,
+      rainfallLevel: 5,
+      temperatureLevel: 5,
+      seaLevel: 0.35,
+      rainShadowEffect: true,
+      fantasyOverrides: {
+        magicalRivers: false,
+        floatingIslands: false,
+        impossiblePeaks: false
+      }
+    };
+    const heightmap = SpatialEngine.generateHeightmap(width, height, geoConfig);
+    const mtnRanges = SpatialEngine.generateMountainRanges(heightmap, geoConfig);
+    const mountains: Position[] = [];
+    mtnRanges.forEach((range) => {
+      range.ridgePoints.forEach((pt) => {
+        mountains.push({
+          id: `m_${pt.x}_${pt.y}`,
+          x: pt.x,
+          y: pt.y,
+          height: 22 + Math.floor(prng() * 10),
+          size: 16
+        });
+      });
+    });
+    updatedMap.mountains = mountains;
+  }
+
+  // 2. Update Forests Density if changed
+  if (newConfig.forestDensity !== undefined) {
+    const forestCount = Math.max(1, Math.floor(newConfig.forestDensity * 0.9));
+    const forests = Array.from({ length: forestCount }).map((_, idx) => ({
+      id: `f_${idx}_${seed}`,
+      x: cx + Math.sin(idx * 2.3 + seed) * (width * 0.28),
+      y: cy + Math.cos(idx * 2.7 + seed) * (height * 0.28),
+      radius: 32 + (idx % 3) * 14,
+      count: 10 + idx * 4
+    }));
+    updatedMap.forests = forests;
+  }
+
+  // 3. Update Kingdoms Count if changed
+  if (newConfig.kingdomCount !== undefined) {
+    const count = Math.min(8, Math.max(1, newConfig.kingdomCount));
+    const selectedProfiles = [...KINGDOM_PROFILES].sort(() => prng() - 0.5).slice(0, count);
+    const kingdoms: MapKingdom[] = selectedProfiles.map((kp, idx) => {
+      const kAngle = (idx * Math.PI * 2) / count + 0.3;
+      const kDist = 140 + prng() * 80;
+      const kx = cx + Math.cos(kAngle) * kDist;
+      const ky = cy + Math.sin(kAngle) * kDist;
+      const kr = 100 + prng() * 40;
+
+      const borderPts: { x: number; y: number }[] = [];
+      for (let b = 0; b < 16; b++) {
+        const bAngle = (b * Math.PI * 2) / 16;
+        const bNoise = 1.0 + Math.sin(bAngle * 3 + idx * 5 + seed) * 0.22;
+        borderPts.push({
+          x: kx + Math.cos(bAngle) * kr * bNoise,
+          y: ky + Math.sin(bAngle) * kr * bNoise
+        });
+      }
+      let borderPath = `M ${borderPts[0].x} ${borderPts[0].y}`;
+      for (let b = 0; b < borderPts.length; b++) {
+        const p0 = borderPts[b];
+        const p1 = borderPts[(b + 1) % borderPts.length];
+        borderPath += ` Q ${p0.x} ${p0.y}, ${(p0.x + p1.x) / 2} ${(p0.y + p1.y) / 2}`;
+      }
+      borderPath += ' Z';
+
+      return {
+        id: `k_${idx}_${seed}`,
+        name: kp.name,
+        color: kp.color,
+        ruler: kp.ruler,
+        center: { x: kx, y: ky },
+        borderPath
+      };
+    });
+    updatedMap.kingdoms = kingdoms;
+  }
+
+  return updatedMap;
+}
+
 export function regeneratePartialSystem(
   existingMap: FantasyMap,
   targetSystem: 'terrain' | 'rivers' | 'biomes' | 'roads' | 'borders',

@@ -10,7 +10,7 @@ import { FindOnMapModal } from '../components/editor/FindOnMapModal';
 import { ContextMenu } from '../components/editor/ContextMenu';
 import type { FantasyMap, GeneratorConfig, MapLayers, SelectedObjectRef, Position, MapStyle, MapType } from '../types/map';
 import type { ActiveTool, TerrainBrushType } from '../types/editorTools';
-import { generateFantasyMap } from '../lib/map-engine/generator';
+import { generateFantasyMap, updateFeatureDensities } from '../lib/map-engine/generator';
 import { loadMapFromLocalStorage, saveMapToLocalStorage, clearMapFromLocalStorage } from '../lib/storage/mapStorage';
 import { useMapHistory } from '../hooks/useMapHistory';
 import { useMapTransform } from '../hooks/useMapTransform';
@@ -465,16 +465,26 @@ export const CreatePage: React.FC<CreatePageProps> = ({
     return true;
   };
 
-  // Change Config State without auto-resetting procedural map
+  // Change Config State & update feature densities live without changing seed or resetting edits
   const handleChangeConfig = useCallback(
     (newConfig: GeneratorConfig) => {
+      const densityChanged =
+        newConfig.mountainDensity !== config.mountainDensity ||
+        newConfig.forestDensity !== config.forestDensity ||
+        newConfig.kingdomCount !== config.kingdomCount;
+
       setConfig(newConfig);
-      // If visual style theme changed, apply style in-place without resetting terrain/objects
-      if (newConfig.style !== currentMap.style) {
+
+      if (densityChanged) {
+        // Dynamically adjust mountain, forest, and kingdom density on the current map in real-time
+        const updated = updateFeatureDensities(currentMap, newConfig);
+        pushState(updated);
+      } else if (newConfig.style !== currentMap.style) {
+        // If visual style theme changed, apply style in-place
         pushState({ ...currentMap, style: newConfig.style });
       }
     },
-    [currentMap, pushState]
+    [config, currentMap, pushState]
   );
 
   // Generate Map Action (Picks brand new seed)
